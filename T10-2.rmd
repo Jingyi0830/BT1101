@@ -1,0 +1,249 @@
+---
+title: "Tutorial 10: Linear Optimization"
+author: "BT1101 Student. REPLACE WITH YOUR NAME"
+date: 'Due by 15/04/2022 8:00 AM'
+output: html_document
+---
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with your own.
+- Submit *only* the required question for grading (Part 2: Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]_[MatricNumber].rmd`, and the output will automatically be `T[X]_[MatricNumber].html`. 
+- Submit your both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for practical exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** You are responsible for de-bugging and programming in the practical exam.
+
+## Preparation
+
+```{r load-libraries, echo=TRUE, warning = FALSE, message = FALSE}
+# load required packages
+# install any package below if it's first time loaded in your computer.
+library(lpSolve)
+```
+
+Please use the following table template for both Parts 1 and 2, which comes from the Farmer Jean example in lecture. This table should exist OUTSIDE any `r` code chunks in order to format properly since it's markdown (html in this case) and not R. Here, we use a pair of '\$'s to enter/exit math mode (this is LaTeX, for those of you who are familiar with and which I used to produce the lecture handouts), which allows us to type symbols like $X_1$, $\leq$ for the "less than or equals" sign and $\geq$ for the "greater than or equals" sign. Use $\,$ (thin space), $\;$ (medium space), $\quad$ (large space, equivalent to curent font size), $\qquad$ (two large spaces) for spacing, so you can leave a blank for decision variables with coefficients of 0. 
+(Note: don't put two \$'s next to each other. Always put a space in between.). 
+
+Maximize total profit using decision variables $X_1$, $X_2$ | Profit = 0.15 $X_1$ + 0.40 $X_2$
+--- | --- 
+Subject to |  
+Budget Constraint | 0.20$X_1$ + 0.70$X_2$ $\leq$ 100
+Space Constraint | $X_1$ + $X_2$ $\leq$ 200
+Non-Negativity Constraint 1 | $X_1$ + $\quad$ $\geq$ 0
+Non-Negativity Constraint 2 | $\quad$ + $X_2$ $\geq$ 0
+
+You may also refer to: https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables for additional information regarding table formatting. From the professor's experience, it takes a while to get used to making tables in Markdown, and even minor changes may break the table. The most common mistakes are: 
+
+- not having a blank line before and a blank line after each table, 
+- not having the correct number of \|'s, 
+- not ending Math mode correctly, and 
+- putting two \$s next to each other. 
+
+The professor will not entertain emails regarding table formatting questions. Also note that for this assignment, please *IGNORE* integer requirements, i.e., just use real number (e.g. fractional answers) if/when they come up. We shall leave it to the last tutorial assignment for integer optimization.
+
+
+## Part Two: Assignment Submission 
+
+### Question 2 (total 20 points)
+
+You work as a chief consultant for a family-owned Swiss watch workshop, producing three types of watches: casual watch, dress watch and luxury watch. Watch production mainly involves machine and labor inputs, in terms of machine and labor hours, respectively. For workshop's daily operation, you know that:
+
+- Each casual watch brings in average profit of \$6k but production of each casual watch requires two hours on machine and half an hour of handcraft.
+- Each dress watch brings in average profit of \$15k but production requires one and a half machine hours and two labor hours.
+- Each luxury watch has an average profit of \$23k but production of luxury watch needs one hour of metalwork and four hours of handcraft. 
+
+Workshop has two machines on metalwork (unbreakable German machine which is running 24 hours) and 6 watchmakers (each working on 12 hour shift daily). The workshop would like to know how to maximize their daily profit by deciding their production plan.
+
+(2a) Clearly define the decision variables, and write out the objective function and constraints (using the table template provided above). Please include the non-negativity constraints. (4 points)
+
+<p style="color:blue">
+Let $x_1$ be number of casual watches, $x_2$ the number of dress watches, and $x_3$ the number of luxury watches.
+<p>
+
+<p style="color:red">
+Decision variables are the numbers of casual, dress and luxury watches to be produced in a day respectively. Objective function is Profit = 6 $X_1$ + 15 $X_2$ + 23 $X_3$ (numbers are in the unit of $1k). Constraints are Machine Constraint, Labour Constraint, and Non-Negativity Constraints.
+</p>
+
+<p style="color:red">
+Table:
+</p>
+
+Maximise total daily profit using decision variables $X_1$, $X_2$, $X_3$ = number of casual, dress and luxury watches to be produced in a day respectively | Profit = 6 $X_1$ + 15 $X_2$ + 23 $X_3$
+--- | --- 
+Subject to |  
+Machine Constraint | 2$X_1$ + 1.5$X_2$ + 1$X_3$ + $\leq$ 2*24
+Labour Constraint | 0.5$X_1$ + 2$X_2$ + 4$X_3$ $\leq$ 6*12
+Non-Negativity Constraint 1 | $X_1$ + $\quad$ + $\quad$ $\geq$ 0
+Non-Negativity Constraint 2 | $\quad$ + $X_2$ + $\quad$ $\geq$ 0
+Non-Negativity Constraint 3 | $\quad$ + $\quad$ + $X_3$ $\geq$ 0
+
+
+(2b) Program your optimization problem and solve the formulated linear problem above, using `lpSolve` in R. Is there any feasible solution and if yes, what is the optimal production plan to maximize workshop's daily profit? What is the daily profit at the optimal production plan? (4 points)
+
+<p style="color:red">
+The optimal production plan to maximise daily profit is to produce 0 casual watch, 30 dress watches and 3 luxury watches.
+</p>
+
+<p style="color:red">
+Daily profit would be $519k.
+</p>
+
+```{r q2b-lp-primal, echo=TRUE}
+# type your code here
+objective_function3 = c(6, 15, 23)
+constraint_mat3 = matrix(c(2, 1.5, 1, 0.5, 2, 4),
+                         ncol=3,
+                         byrow=TRUE)
+constraint_dir3 = c("<=", "<=")
+constraint_rhs3 = c(48, 72)
+
+lp_solution3 = lp(direction = "max",
+                  objective_function3,
+                  constraint_mat3,
+                  constraint_dir3,
+                  constraint_rhs3,
+                  compute.sens=TRUE)
+
+print(lp_solution3$solution)
+
+print(lp_solution3)
+
+```
+
+
+
+(2c) For some "what if" questions:
+
+- What would be the largest profit margin of luxury watch such that it is optimal to not produce them in the workshop? (2 points)
+- What would the least profit margin of casual watch such that it is optimal to produce them? (2 points)
+- Given the fact that the constraining resources for further watch production expansion are machine and labor hour (as you may guess they are quite costly to procure: precision machining and experienced artisans), what would be the break-even procurement prices for one additional machine hour and one additional labor hour, respectively? (2 points)
+
+<p style="color:blue">
+If the profit margin is lower or equal to $10k, it is optimal to stop producing luxury watch.
+<p>
+
+<p style="color:red">
+The largest profit margin of luxury watch is $10k such that it is optimal to not produce them in the workshop. According to the result from sensitivity analysis, the current solution remains optimal as long as the  marginal profit of a luxury watch is between \$10k and \$27.23k. When the marginal profit of a luxury watch is lower than \$10k, the optimal solution will move to another vertex where it is optimal to not produce any luxury watches. Thus the maximum profit margin of luxury watch such that it is optimal to not produce them is \$10k.
+</p>
+
+<p style="color:blue">
+If the profit margin is at least as $9.4375k, it is optimal to produce casual watch.
+<p>
+
+<p style="color:red">
+The least profit margin of casual watch is $9.4375k such that it is optimal to produce them. According to the result from sensitivity analysis, the current solution remains optimal as long as the marginal profit of a casual watch lower than \$9.4375k. When the marginal profit of a casual watch is greater than \$9.4375k, the optimal solution will move to another vertex where it is optimal to produce casual watches. Thus the minimum profit margin of casual watch such that it is optimal to produce them is \$9.4375k.
+</p>
+
+<p style="color:blue">
+The break-even prices for one additional machine is $3.5k and that for one additional labour hour is \$4.875. Why shadow prices are break-even prices for machine and labour capacity? e.g. if the procurement price for one additional laboour hour is greater than \$4.875k, it is not worthwhile for the workshop to do since bringing in additional labour only increases the daily profit by exactly \$4.875k.
+<p>
+
+<p style="color:red">
+From the sensitivity analysis, if the right-hand side of the Machine Constraint increases by 1, i.e., one additional machine hour is available, the maximum optimal profit will increase by $3.5k. The maximum optimal profit will change to \$522.5k. Thus, the break-even procurement price for one additional machine hour is \$3.5k. 
+</p>
+
+<p style="color:red">
+From the sensitivity analysis, if the right-hand side of the Labour Constraint increases by 1, i.e., one additional labour hour is available, the maximum optimal profit will increase by $4.875k. The maximum optimal profit will change to \$523.875. The break-even procurement price for one additional labour hour is \$4.875k.
+</p>
+
+```{r q2c-sens, echo=TRUE}
+# type your code here
+range_objcoef3 = cbind(lp_solution3$sens.coef.from, lp_solution3$sens.coef.to)
+rownames(range_objcoef3) = c("x1", "x2", "x3")
+colnames(range_objcoef3) = c("from", "to")
+print(range_objcoef3)
+
+print(lp_solution3$duals)
+
+#break-even procurement price for one additional machine hour
+519 + 3.5
+
+#break-even procurement price for one additional labour hour
+519 + 4.8750
+```
+
+(2d) From the lecture you know that the shadow prices are the *internal prices* for the constrained resources, here in this case the machine and labor hours for the watch workshop. Let's now try to understand better how shadow prices are formed and why they are called `duals` in `lpSolve`. Consider a related but separate linear optimization problem.
+
+Consider that workshop owner does not actually own the machine and labor capacities but need to rent them in the market by paying a pair of resource prices $(y_1, y_2)$ for machine hour and labor hour, respectively. She fixed a plan to rent two machines and six watchmakers to produce casual, dress and luxury watches same as before. She *decides* the resource prices $y_1$ and $y_2$ to pay for the resources she planned as to minimize daily renting cost, i.e. $48 y_1 + 72 y_2$. However, the constraints she faces now are that the marginal cost of producing each type of the watch must be as least as the profit margin of that watch (otherwise, she should not plan her production at the first place simply because she is losing money by producing watches). For example, for casual watch, $2y_1 + \frac{1}{2}y_2 \ge 6$ (production of each casual watch requires two hours on machine and half an hour of handcraft, marginal cost to produce one watch is thus $2y_1 + \frac{1}{2}y_2$).  
+
+- Write out the decision variables, objective function and linear constraints of this minimization problem as what you did in (2a). Don't forget to include non-negativity constraints. (2 point)
+
+- Code it into R and solve it. What is the optimal solution for this minimization problem? What is the value of objective function, i.e. daily renting cost at the optimal solution? What are the shadow prices? Compared with profit maximization problem before, what do you find? (3 point)
+
+
+<p style="color:blue">
+Let $y_1$ be the price for machine hour and $y_2$ theprice for labour hour.
+<p>
+
+<p style="color:red">
+Table:
+</p>
+
+Minimise daily renting cost using decision variables $Y_1$, $Y_2$ = rent prices for a machine hour and a labour hour respectively | Cost = 48 $Y_1$ + 72 $Y_2$
+--- | --- 
+Subject to |  
+Casual Watch Constraint | 2$Y_1$ + 0.5$Y_2$ $\geq$ 6
+Dress Watch Constraint | 1.5$Y_1$ + 2$Y_2$ $\geq$ 15
+Luxury Watch Constraint | 1$Y_1$ + 4$Y_2$ $\geq$ 23
+Non-Negativity Constraint 1 | $Y_1$ + $\quad$ $\geq$ 0
+Non-Negativity Constraint 2 | $\quad$ + $Y_2$ $\geq$ 0
+
+<p style="color:blue">
+The optimal solution of resource prices are $y_1$ = 3.5 and $y_2$ = 4.875 which are exactly the shadow prices of profit maximisation problem (called "primal problem").
+<p>
+
+<p style="color:blue">
+The value of objective function at the optimal solution is 519 which is exactly equal to the optimal value of objective function in the primal problem. It means that the lowest daily renting cost when choosing the resource prices optimally is actually the highest daily profit when choosing the production optimally.
+<p>
+
+<p style="color:blue">
+The shadow prices of cost minimisation problem (called "dual problem") are (0, 30, 3, 0, 0). In particular, the shadow prices of dual problem for the first three constraints return the optimal solution of the primal problem.
+<p>
+
+<p style="color:red">
+The optimal solution is to set price for a machine hour as \$3.5k and price for a labour hour as \$4.875.
+</p>
+
+<p style="color:red">
+At the optimal solution, the value of the objective function, total daily renting cost, is \$519k.
+</p>
+
+<p style="color:red">
+The shadow prices for casual watch constraint, dress watch constraint and luxury watch constraint are \$0k, \$30k, and \$3k respectively. The shadow prices for the two non-negativity constraints are both \$0.
+</p>
+
+<p style="color:red">
+I found that the optimal solution, the daily renting cost at its minimum, is \$519k, which is equal to the maximum daily profit in the maximisation problem. This means that while the shop owner chooses the production plan to maximise the total daily profit, the costs of the resources are such that the total cost is equal to the total profit generated. Therefore the total profit becomes zero. 
+</p>
+
+<p style="color:red">
+Also, the optimal renting costs for machine and labour are also equal to the shadow prices for machine and labour constraints respectively. This means that the shop produces at Marginal Cost (marginal profit gained for an additional unit of machine/labour, MC) = Marginal Revenue (optimal cost for one unit of machine/labour, MR) such that net profit = 0.
+</p>
+
+```{r q2d-dual, echo=TRUE}
+# type your code here
+objective_function4 = c(48, 72)
+constraint_mat4 = matrix(c(2, 0.5, 1.5, 2, 1, 4),
+                         ncol=2,
+                         byrow=TRUE)
+constraint_dir4 = c(">=", ">=", ">=")
+constraint_rhs4 = c(6, 15, 23)
+
+lp_solution4 = lp(direction = "min",
+                  objective_function4,
+                  constraint_mat4,
+                  constraint_dir4,
+                  constraint_rhs4,
+                  compute.sens=TRUE)
+
+print(lp_solution4$solution)
+
+print(lp_solution4)
+
+print(lp_solution4$duals)
+
+```
+
+(2e) Successfully knitting the RMD to HTML. (1 point)

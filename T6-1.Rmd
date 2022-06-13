@@ -1,0 +1,362 @@
+---
+title: 'Tutorial 6: Linear Regression'
+author: 'REPLACE WITH YOUR NAME and ID#'
+date: 'Due by 18/03/2022 8:00 AM'
+output: html_document
+---
+
+## Introduction to R Markdown
+
+In the first half of the course, you were getting familiar with writing R code (in individual `xxx.R` files) and also starting on using RMarkdown for professional-grade text processing with embedded R computations.
+
+In this second half of the course, we will use RMarkdown exclusively to formalize all tutorial assignment submission. Just a very brief recap of RMarkdown below.
+
+You can open R Markdown documents in RStudio as well. You should see a little command called "Knit", which allows you to "knit" the entire R Markdown file into a HTML document, or a PDF document, or a MS Word Document (note that for PDF, Tex distribution is needed; for MS Word, MS Word needs to be installed on your system).
+
+R Markdown is handy because it allows you to embed code and writeup into the same document, and it produces presentable output, so you can use it to generate reports from your homework, and, when you eventually go out to work in a company, for your projects.
+
+Here's how you embed a "chunk" of R code.
+
+```{r example-chunk, echo=TRUE}
+1+1
+```
+
+After the three apostrophes, you'll need `r`, then you can give the chunk a name. Please note that **names have to be single-word and no space is allowed**. Also, names have to be unique, that is, every chunk needs a **different** name. You can give chunks names like:
+
+- `chunk1`
+- `read-in-data`
+- `run-regression`
+
+Or, those that help you with homework:
+
+- `q1a-read-in-data`
+- `q1b-regression`
+
+These names are for you to help organize your code. (In practice it will be very useful when you have files with thousands of lines of code...). After the name of the chunk, you can give it certain options, separated by commas. I will highlight one important option. 
+
+- `echo=TRUE` means the code chunk will be copied into the output file. For homework purposes, **always** set `echo=TRUE` so we know what code you wrote. When you go out to work in a company and you want to produce professional-looking reports, feel free to set it to FALSE.
+
+
+There is a bit more syntax to learn using the R Markdown, but we don't need you to be an expert in R Markdown (although we do expect proficiency in R!). Hopefully, you can copy all the R Markdown syntax you need from the templates we provide. 
+
+
+Note about **working directory** in R Markdown. If you do not specify your working directory via `setwd('...')`, and you hit "Knit", the document will assume that the working directory is the directory that the `.rmd` file is in. Thus, if your rmd is in `XYZ/folder1/code.rmd` and your dataset is `XYZ/folder1/data.csv`, then you can simply run `d0 <- read.csv('data.csv')` without running `setwd()`.
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- I would also recommend you to play with PDF file using pdf_document for your own benefit (LaTex needs to be installed).
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with your own.
+- Submit *only* the required question for grading (Part 2: Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]_[MatricNumber].rmd`, and the output will automatically be `T[X]_[MatricNumber].html`. 
+    - for example, `T6_12345.html`
+    - X is the Tutorial number at the top of this file. For example, Linear Regression is "T6".
+- Submit your both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for practical exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** Keep in mind that you are responsible for de-bugging and programming in the final exam.
+
+## Preparation
+
+```{r load-libraries, echo=TRUE}
+# load required packages
+library(dplyr)
+library(tidyr)
+library(ggplot2) # optional. we expect you to know base graphics, but allow ggplot if you find it easier
+```
+
+## Part One: Lab-Session Completion and Discussion
+
+- Dataset required: `WorldBankData.csv`
+
+(Note: This dataset comes from a publicly available dataset from The World Bank. https://databank.worldbank.org/source/world-development-indicators.)
+
+
+First, load in the dataset for this question. There are 8 variables in this real-world dataset, from 258 countries in 2016/2017:
+
+- `Human.Capital.Index`: unitless number that goes from 0 to 1.
+- `GDP.per.capita.PPP` in US Dollar. This is GDP per capita, but taking into account the purchasing power of the local currency, by comparing how much it costs to buy a basket of goods (e.g. food) compared to the reference currency (USD). (PPP stands for Purchasing Power Parity)
+- `Health.Expenditure.per.capita` in US Dollar.
+- `Tertiary.Education.Expenditure.per.student` in US Dollar.
+- `Population`.
+- `Life.Expectancy.at.birth` in years.
+- `Diabetes.Prevalence` in units of % of population ages 20 to 79.
+- `Years.of.Compulsory.Education` in years.
+
+Being a dataset in real world, there are lots of missing data. Be wary of this!
+
+```{r q1-read-dataset, echo=TRUE}
+dta_wb = read.csv('WorldBankData.csv')
+```
+
+### Question 1 
+
+First, let's investigate `Human.Capital.Index`. As noted by Prime Minister Lee in his 2019 National Day Rally, Singapore topped the world on this Human Capital Index in 2018. Let's try to see what are some of the possible variables that correlate with this.
+
+
+(1a) Start off by plotting `Human.Capital.Index` (on the y-axis) versus `GDP.per.capita.PPP` on the x-axis. What do you notice? What type of relationship exists between the two variables? Is it linear?
+
+
+<p style="color:red">
+
+Positive relationship
+
+Not linear
+
+GDP per capita is correlated with Human Capital Index, such that countries with higher GDP per capita also tend to have higher Human Capital Index. However the relationship does not seem to be linear.
+
+</p>
+
+```{r q1a-plot, echo=TRUE}
+ggplot(dta_wb, 
+       aes(x=GDP.per.capita.PPP, 
+           y=Human.Capital.Index)) +
+  geom_point() +
+  theme_bw()
+
+#theme_bw() means the plot being black and white colour
+#there are many other different colour themes -> google!
+
+plot(dta_wb$GDP.per.capita.PPP, 
+     dta_wb$Human.Capital.Index,
+     main="Simple Scatter Plot of HCI v.s. GDP per capita PPP",
+     xlab="GDP per capital PPP",
+     ylab="Human Capital Index")
+```
+
+
+
+(1b) What type of transformation could you apply? Try a few functions that were shown in class: `x^2, x^3, ...`, `exp(x)`, `log10(x)`. Make a plot that shows a linear relationship, and describe what you did.
+
+For fun: add code into your plot to highlight the dot that represents Singapore. 
+
+<p style="color:red">
+
+log10(x variable)
+
+We see an exponential trend, similar to an example in the lecture slides. There may be several possible transformations to get a linear trend.
+
+If we apply the base10 logarithm to GDP per capita, we find that there now seems to be a linear relationship between Human Capital Index and log-GDP-per-capita.
+
+Note, natural log also acceptable, but less interpretable. If log10 GDP is 4.0, then we know that GDP is 10^4 or $10000.
+
+</p>
+
+```{r q1b-plot, echo=TRUE}
+#NOTE: log() is the natural log; log10() is logarithm of base 10
+
+dta_wb$logGDP = log10(dta_wb$GDP.per.capita.PPP)
+
+plot(dta_wb$GDP,
+     dta_wb$Human.Capital.Index,
+     col = ifelse(dta_wb$Country.Name=="Singapore",
+                  "red",
+                  "black"))
+
+ggplot(dta_wb,
+       aes(x=logGDP,
+           y=Human.Capital.Index)) +
+  geom_point() +
+  geom_point(data=subset(dta_wb,
+                         dta_wb$Country.Name=="Singapore"),
+             color="red") +
+  ylim(0.2, 1.0) +
+  theme_bw()
+```
+
+
+(1c) Now that you have a plot of a linear relationship, run a linear regression using `lm()`, predicting `Human Capital Index`. Run `summary()` on the `lm` object to produce an output table. Interpret the output of the `lm()`. What do the `b` coefficients mean? (Interpret them "in English" and try to make sense of the numbers, even if they might seem weird at first. How many countries made it into this regression? (What happened to the rest?) Comment on the goodness-of-fit statistics.
+
+
+<p style="color:red">
+Interpreting output of the linear model:
+
+Intercept = -0.43264. When log gdp is zero, HCI will be this value. This number does not make much sense, because HCI is defined to be between 0 and 1. But it is important to still be able to interprete what these numbers mean.
+
+log10(GDP.per.capita.PPP) = 0.24602. The slope (b1) is 0.246. When log gdp increases by 1 unit (i.e. gdp increases by 10 times), HCI will increase by 0.24602. This is pretty significant given that the scale of HCI is from 0 to 1, and the lowest and highest HCI values are 0.293 and 0.884. For completeness, we note that the t-value is very large, and the p-value is very small, less than 0.05, thus we can reject the null hypothesis that this slope beta1=0, i.e. beta1 is statistically significantly different from zero.
+
+A total of 258 countries. summary() helpfully tells you that 101 observations were deleted due to missingness of an imbalance data set. This results in 258-101 countries that were used in the regression analysis. To double check, there is one independent variable log gdp plus an intercept. So there should be n-2=157-2 degrees of freedom, which also corresponds to what summary() reveals.
+
+R square is 0.746, which means that this model explains almost 75% of the total variation of HCI. F-test's p-value is significant implies that "not all beta1, ... are not zero", here in this case with only one predictor, beta1 is statistically not zero. This is no surprise since it is consistent with t-test for beta1.
+
+F-value is equal to square of t-value for beta1 in simple linear regression. Not true in general for multivariate linear regression.
+
+</p>
+
+```{r q1c-lm, echo=TRUE}
+fit_hci.gdp = lm(Human.Capital.Index ~ log10(GDP.per.capita.PPP), data=dta_wb)
+
+summary(fit_hci.gdp)
+
+plot(log10(dta_wb$GDP.per.capita.PPP), 
+     dta_wb$Human.Capital.Index)
+
+abline(fit_hci.gdp, col="red")
+
+```
+
+
+### Question 2 
+
+- Dataset required: `WorldBankData.csv`
+
+Let's look at another set of variables in the same dataset. This time, let's consider `Health.Expenditure.per.capita`, `Diabetes.Prevalence`, and `Life.Expectancy.at.birth`.
+
+(2a) If you had to design a predictive hypothesis with these three variables, what would it be? Which would be your dependent variable, and which would be your independent variables? Justify your answer. (Note, there is no necessarily "right" or "wrong" answer for this question, as is the case in real life, but there are more justifiable answers that you would feel more comfortable putting up to your boss!)
+
+
+<p style="color:red">
+Dependent variable: Life.Expectancy.at.birth
+
+Independent variables: Health.Expenditure.per.capita, Diabetes.Prevalence
+
+I would pick life expectancy as an outcome variable, because it is something that is of importance to society, and is something that one might seek to increase as a goal.
+
+It makes more sense to see if diabetes and health expenditure predict life expectancy, not the other way around.
+</p>
+
+
+
+
+(2b) Plot the bivariate relationships between these three variables. (In other words, plot x-y scatterplots. There are 3 variables, so you'll need 3 scatterplots.) Please also apply the same transformation in (1b) to `Health.Expenditure.per.capita`. Comment on the relationship between the variables.
+
+
+<p style="color:red">
+Pairwise relationships.
+
+If there is a relationship? Shape of the relationship?
+
+</p>
+
+```{r q2b-plot, echo=TRUE}
+plot(log10(dta_wb$Health.Expenditure.per.capita),
+     dta_wb$Diabetes.Prevalence)
+
+plot(log10(dta_wb$Health.Expenditure.per.capita),
+     dta_wb$Life.Expectancy.at.birth)
+
+plot(dta_wb$Diabetes.Prevalence,
+     dta_wb$Life.Expectancy.at.birth)
+
+
+```
+
+
+
+(2c) Run a multiple regression predicting `Life.Expectancy.at.birth` using the other two variables. Interpret the coefficients, spelling out what the numbers mean. Comment on your answers.
+
+<p style="color:red">
+10 times increase in health expenditure per capital leads to a 10.77368 increase in life expanctancy, `holding all other variables constant`.
+
+NOTE: important to state that `holding all other variables constant`
+
+Both log health expenditure and diabetes prevalence are statistically significant predictors of life expectancy. Check for interpretation of the intercept. In a country with 0 log expenditure and with 0 diabetes, life expectancy is 39.6 years.
+
+Every unit increase of log health expenditure per capita (i.e. increasing health expenditure by 10x) will be associated with an expected increase in life expectancy by 10.7 years. We note that the t-value is very large, and the p-value is very small, less than 0.05, thus we can reject the null hypothesis that this slope parameter of log health expenditure per capita is 0, i.e., the coefficient is significantly different from zero.
+
+Now, this is the strange part. How come every % increase in diabetes prevelance is associated with an increase in life expectancy by 0.24 years? Isn't this opposite, in that if prevalence of diabetes (which is a serious disease that can kill) is very high, then life expectancy should go down, right, since more people will die of diabetes?
+
+This could be due to external factors that are not in our model. For example, perhaps countries that are more affluent have access to more sugary foods, and thus may experience higher rates of diabetes. These more affluent countries also have access to better healthcare and hence may enjoy longer life expectancies.
+
+</p>
+
+
+```{r q2c-lm, echo=TRUE}
+fit_life.exp.dia = lm(Life.Expectancy.at.birth ~ log10(Health.Expenditure.per.capita) + Diabetes.Prevalence, dta_wb)
+
+summary(fit_life.exp.dia)
+
+```
+
+
+
+
+## Part Two: Assignment Submission 
+
+### Question 3 (Total 15 points)
+
+- Dataset required: `data('recid')`
+
+Recidivism rate in Singapore is 24% in 2016 (https://data.gov.sg/dataset/recidivism-rate). Criminals tend to relapse into criminal offense after the release from the prison. Recidivism is costly and causes serious social and economical problem. It is not only wasteful with the resources invested in prison, including staffing, infrastructure investment, daily operation cost, and economic opportunity cost for both prisoners and staffs (i.e., labor values that could be generated elsewhere other than being locked up and guarding in prison, respectively), but also harms the community for the second time due to crime recommitment. Recidivism is thus a critical evaluating metric for prison performance, e.g., rehabilitation or training program. `recid.csv` contains 1445 observations of recidivism cases in United States where it currently has the largest prison population in the world (about one out every five peope imprisoned in the world is incarcerated in the United States).
+
+```{r q3-data-input, echo=TRUE}
+recid = read.csv(file = 'recid.csv', header= TRUE)
+```
+
+C.-F. Chung, P. Schmidt, and A.D. Witte (1991), “Survival Analysis: A Survey,” Journal of Quantitative Criminology 7, 59-98.
+Data Source: https://www.cengage.com/cgi-wadsworth/course_products_wp.pl?fid=M20b&product_isbn_issn=9781111531041. A quick description of the data:
+
+Obs:  1445
+
+  1. black                    =1 if black
+  2. alcohol                  =1 if alcohol problems
+  3. drugs                    =1 if drug history
+  4. super                    =1 if release supervised
+  5. married                  =1 if married when incarc.
+  6. felon                    =1 if felony sentence
+  7. workprg                  =1 if in N.C. pris. work prg.
+  8. property                 =1 if property crime
+  9. person                   =1 if crime against person
+ 10. priors                   # prior convictions
+ 11. educ                     years of schooling
+ 12. rules                    # rules violations in prison
+ 13. age                      in months
+ 14. tserved                  time served, rounded to months
+ 15. follow                   length follow period, months
+ 16. durat                    max(time until return, follow) in month
+ 17. cens                     =1 if duration right censored
+ 18. ldurat                   log(durat)
+ 
+(3a) Based on previous experience, prison staffs suggest that the recidivism period `durat` (duration between release and follow-up offense) is related with the length o f time served in the prison `tserved`. If we are interested to explain recidivism, which is the dependent (or outcome) variable? Before jumping into the numbers, visualize the relationship between the variables of interest with a scatterplot. (2 point) 
+
+<p style="color:red">**Type your answer here**</p>
+```{r q3a, echo=TRUE}
+
+```
+
+
+(3b) Run a simple linear regression model between `durat` and `tserved` and interpret the coefficient before `tserved`. (2 points) Is the coefficient statistically significant? (1 point)
+
+Remark: the intercept is by default included in the regression model for this module, unless otherwise specified.
+
+<p style="color:red">**Type your answer here**</p>
+```{r q3b, echo=TRUE}
+
+```
+
+
+
+
+(3c) In addition to prison serving time `tserved`, few other variables are suggested to predict the recidivism by prison staff, including previous drug use `drugs`, alcohol abuse `alcohol`, number of prior convictions `priors` and attendance of prison training program `workprg`. If we are to have a multivariate linear regression model to explain `durat` with all the mentioned variables, please write down explicitly the population linear regression model below. If you use $Y$, and $X_1$, $X_2$, etc., clearly define or label your notations, e.g., $X_1 = ?$ (2 points)
+
+<p style="color:red">**Type your answer here**</p>
+
+
+(3d) Prison staff are evaluating the effectiveness of the working program. Run a multivariate linear regression: `durat ~ tserved + drugs + alcohol + priors + workprg`. Interpret the meaning of coefficient before `workprg` and discuss if prison working program should be retained from your observation to the regression result and why? (3 points)
+
+<p style="color:red">**Type your answer here**</p>
+```{r q3d, echo=TRUE}
+
+```
+
+
+
+
+(3e) The warden of prison decided to terminate the working program. Do you agree with his/her decision? Why or why not? (3 points)
+
+Hint: One of most effective way to be critical is to check the assumptions used to reach the conclusion and decision.
+
+<p style="color:red">**Type your answer here**</p>
+```{r q3e, echo=TRUE}
+
+```
+
+
+
+(3f) Offenders after prison release usually are under state supervised parole program and assessment for the length of the follow period, `follow`, is crucial since it is costly. Given five variables in `recid` data set: `follow`, `rules`, `age`, `tserved`, and `married`, how could you help the staffs to predict the outcome of a recent case given that a 32-year old married offender has been serving the jail time for 3 years and 7 months and during which broken no rule in the prison? Run a proper model with those 5 variables and predict the length of follow period. (2 point)
+
+
+<p style="color:red">**Type your answer here**</p>
+
+```{r q3f, echo=TRUE}
+
+```

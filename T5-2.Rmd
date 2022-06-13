@@ -1,0 +1,839 @@
+---
+title: "BT1101-Tutorial 5 (Part 2 Deadline: 11 Mar 9am)"
+output: html_document
+---
+
+## Introduction to R Markdown
+
+R Markdown, is an extremely useful tool that professional data scientists and business analysts use in their day-to-day work.
+
+You can open R Markdown documents in RStudio as well. You should see a little command called "Knit", which allows you to "knit" the entire R Markdown file into a HTML document, or a PDF document, or a MS Word Document (note, for MS Word, you'll need MS Word installed on your system; for PDF, you need to have Tex/Latex distribution installed).
+
+R Markdown is nice to use simply because it allows you to embed both code and write-up into the same document, and it produces presentable output, so you can use it to generate reports from your homework, and, when you eventually go out to work in a company, for your projects.
+
+Here's how you embed a "chunk" of R code.
+
+```{r example-chunk, echo=TRUE}
+1+1
+```
+
+After the three apostrophes, you'll need `r`, then you can give the chunk a name. Please note that **CHUNK NAMES HAVE TO BE A SINGLE-WORD, NO SPACE ALLOWED**. Also, names have to be unique, that is, every chunk needs a **different** name (this has led to rendering failures in previous final exams). You can give chunks names like:
+
+- `chunk1`
+- `read-in-data`
+- `run-regression`
+
+or, what will help you with homework:
+
+- `load-library`
+- `q1.(a)` etc
+
+These names are for you to help organize your code. (In practice it will be very useful when you have files with thousands of lines of code...). After the name of the chunk, you can give it certain options, separated by commas. I will highlight one important option. 
+
+- `echo=TRUE` means the code chunk will be copied into the output file. For homework purposes, **ALWAYS** set `echo=TRUE` so we know what code you wrote. When you go out to work in a company and you want to produce nice looking reports, feel free to set it to FALSE.
+
+
+There is a lot to syntax to learn using the R Markdown, but we don't need you to be an expert in R Markdown (although we do expect proficiency in R!). Hopefully, you can copy all the R Markdown syntax you need from the templates we provide. 
+
+
+Note about *working directories* in R Markdown. If you do not specify your working directory via `setwd('...')`, and you hit `Knit`, the document will assume that the working directory is the directory that the `.rmd` file is in. Thus, if your rmd is in `XYZ/folder1/code.rmd` and your dataset is `XYZ/folder1/data.csv`, then you can simply run `d0 <- read.csv('data.csv')` without running `setwd()`.
+
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- We would recommend that you play with the PDF file using pdf_document for your own benefit. We only require `html` format for assignments and exam.
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with the answer of your own.  (This is usually the descriptive and explanation part of your answer)
+- Submit *only* the required question for grading (Part 2: For Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]-[MatricNumber].rmd`, and the output will automatically be `T[X]-[MatricNumber].html`.
+    - for example, `T5-12345.html`
+    - X is the Tutorial number at the top of this file. For example, this file is for "T5".
+- Submit both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for the exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** You are responsible for de-bugging and programming in the exam.
+
+## Preparation
+
+## Tutorial 5
+
+```{r load-libraries, echo=TRUE}
+# install required packages if you have not (suggested packages: rcompanion, rstatix, Rmisc, dplyr, tidyr, rpivotTable, knitr, psych)
+# install.packages("dplyr") #only need to run this code once to install the package
+# load required packages 
+# library("xxxx")
+
+library("rcompanion")
+library("rstatix")
+library("Rmisc")
+library("dplyr")
+library("tidyr")
+library("rpivotTable")
+library("knitr")
+library("psych")
+
+```
+
+
+
+### Tutorial 5 Part 2: CardioGood Fitness (To be Submitted; 30 marks)
+Context:  Your market research team at AdRight is assigned to study the profile of the typical customer for each treadmill product offered by CardioGood Fitness. The team decides to collect data on individuals who purchased a treadmill at a CardioGoodFitness retail store during the prior three months. 
+
+The data are stored in the `CardioGoodFitness.csv` file. The team identifies the following customer variables to study: 
+
+- `Product`: product purchased (TM195, TM498, or TM798)
+- `Age`: in years
+- `Gender`: Female or Male
+- `Education`: number of years of education 
+- `MaritalStatus`: Single or Partnered
+- `Usage`: average number of times the customer plans to use the treadmill each week
+- `Fitness`: self-rated fitness on an 1-to-5 scale, where 1 is poor shape and 5 is excellent shape. 
+- `Income`: annual household income ($)
+- `Miles`: average number of miles the customer expects to walk/run each week
+
+<p>
+**In Tutorial 4, you were tasked by your team to help create the dashboards and analytics towards a better understanding of the customer profile of the CardioGood Fitness treadmill product line. In this tutorial you will help to develop estimates and to conduct some hypothesis testings. Where necessary, check the distribution for the variables and for the presence of outliers <FONT COLOR=blue>(4 marks for outlier analyses). </FONT COLOR>**
+</p>
+
+<p>
+**To encourage you to learn to debug your RMD file and be able to knit your RMD file to HTML, we will also award <FONT COLOR=blue> 1 mark for including your HTML file in your submission </FONT COLOR>. If you have any error codes in your RMD file that you are unable to fix prior to your assignment submission, you may add a # sign to comment away the error codes so that the RMD file can knit.**
+</p>
+
+```{r data-read-in2, echo=T, eval=T}
+## Please check that the .csv file is in the same directory as your Rmd file.
+
+d1 <- read.csv("CardioGoodFitness.csv")
+
+head(d1)
+
+```
+
+
+#### Q2.(a) Computing Interval Estimates
+Using the data that the team has collected:  
+
+- i. Find the 95% prediction interval for `Age`. Explain this finding to the team. (3 marks)
+- ii. Develop the 95% confidence interval for mean customer age. Based on this confidence interval, explain to the team if there is sufficient evidence to conclude that its customers' average age is 30?  (2 marks)
+- iii. Develop the 95% confidence interval for the true proportion of male customers. From this interval estimate, should the team believe that the company has more male customers than female customers?) (2 marks)
+
+Type your findings and explanations in the space below.  
+
+For tutorial discussion: Repeat the above with 90% intervals. Compare the widths of the 90% intervals vs  95% intervals. Which intervals provide better precision? 
+
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r q2a, echo=TRUE}
+
+## Type your codes here
+##(i)
+
+##Start analysing whether the variable follows normal distribution through `histogram`
+##Then if the data is normally distributed, proceed with box plots, etc.
+
+hist(d1$Age,
+     main="Histogram for Age",
+     xlab="Age")
+
+#check normality and outlier analyses for Age data
+#Q-Q plot
+qqnorm(d1$Age,
+       ylab="Sample Qualities for `Age` of customers")
+qqline(d1$Age, 
+       col="red")
+
+#Shapiro-Wilk test
+shapiro.test(d1$Age)
+
+#density plot
+plot(density(d1$Age), 
+     main="Density plot for `Age` of customers")
+
+#box plot
+boxplot(d1$Age, 
+        main="Boxplot for `Age` of customers (1.5 IQR)")
+
+boxplot(d1$Age,
+        range=3,
+        main="Boxplot for `Age` of customers (3 IQR)")
+
+#transform data to normal distribution using transformTukey
+d1$Age.t = transformTukey(d1$Age, 
+                          plotit=TRUE)
+
+#using -1*x^lambda where lambda = -1.25
+mnage.t <- mean(d1$Age.t)
+sdage.t <- sd(d1$Age.t)
+lPI.aget <- mnage.t + (qt(0.025, df=(nrow(d1)-1))*sdage.t*sqrt(1+1/nrow(d1)))
+uPI.aget <- mnage.t - (qt(0.025, df=(nrow(d1)-1))*sdage.t*sqrt(1+1/nrow(d1)))
+cbind(lPI.aget, uPI.aget)
+
+#reverse transform; comments below are to derive the formula
+# y = -1*x^lambda
+# -1*y = x^(-1.25)
+# x = (-1*y)^(1/-1.25)
+lPI.age <- (-1*lPI.aget)^(1/-1.25)
+uPI.age <- (-1*uPI.aget)^(1/-1.25)
+
+#reverse transform
+print(cbind(lPI.age, uPI.age), digits=4)
+
+
+##(ii)
+#unknown population standard deviation, thus t-test is used
+#compute manually 95% CI for mean Age
+uCIage95 <- mean(d1$Age) - qt(0.025, df=nrow(d1)-1)*sd(d1$Age)/sqrt(nrow(d1))
+lCIage95 <- mean(d1$Age) + qt(0.025, df=nrow(d1)-1)*sd(d1$Age)/sqrt(nrow(d1))
+print(cbind(lCIage95, uCIage95), digits=4)
+
+##Or, use library "Rmisc"
+library("Rmisc")
+ci.age <- CI(d1$Age, ci=0.95)
+ci.age
+
+##(iii)
+d1M <- d1 %>% filter(Gender=="Male")
+pd1M <- nrow(d1M)/nrow(d1)
+uCIpd1M <- pd1M - (qnorm(0.025)*sqrt(pd1M
+                                    *(1-pd1M)/nrow(d1)))
+lCIpd1M <- pd1M + (qnorm(0.025)*sqrt(pd1M
+                                    *(1-pd1M)/nrow(d1)))
+print(cbind(lCIpd1M, uCIpd1M), digits=4)
+
+##Computing with 90% confidence interval
+uCIpd1M90 <- pd1M - (qnorm(0.05)*sqrt(pd1M
+                                    *(1-pd1M)/nrow(d1)))
+lCIpd1M90 <- pd1M + (qnorm(0.05)*sqrt(pd1M
+                                    *(1-pd1M)/nrow(d1)))
+print(cbind(lCIpd1M90, uCIpd1M90), digits=4)
+
+##Conclusion: 90% confidence interval is wider but less precise
+
+```
+
+<p style="color:blue">
+Type your answer here.
+
+(i)
+
+Firstly, I started by checking its distribution and outliers. Using Q-Q Plot and Density Plot, it can be observed that the `Age` variable does not perfectly follow normal distribution. In the Shapiro-Wilk Test, although W value of 0.91577 is close to 1, the p value of 1.183e-08 is significantly lower than 0.05, therefore the variable does not follow normal distribution. 
+
+By drawing bar plot of 1.5 IQR, it can be observed that there are data points lying far beyond others, signalling that there may be outliers. However, when bar plot of 3 IQR is plotted, there is no data points far away from others. Therefore, there is no outliers.
+
+Since the variable is not normally distributed, I then transformed data to normal distribution using transformTukey. Since lambda of -1.25 is smaller than 0, the formula `TRANS = -1 * x ^ lambda` is then used to compute the new data values. After obtaining the upper and lower prediction intervals, the formula is reversed to transform data back. 
+
+The final statistics is that the 95% Prediction Interval is [19.41, 49.26]. This suggests that given the observed customer age, the age for a new CardioGood Fitness customer will lie within this interval with 95% level of confidence. More generally, with repeated random sampling, 95% of such constructed predictive intervals would contain the new customer age.
+
+
+(ii)
+
+The 95% Confidence Interval for mean customer age is [27.77, 29.81]. We are 95% "confident" that this interval contains the true population mean. More generally, with repeated random sampling from the same population (infinitely), 95% of such constructed confidence intervals would contain the true population mean age.
+
+There is insufficient evidence to conclude that its customers' average age is 30, since 30 does not fall between the 95% confidence interval of between 27.77 and 29.81, i.e. 30 is higher than the upper 95% Confidence Interval. 
+
+Therefore, there is sufficient evidence to conclude that the customers' average age is not 30, which is to reject the null hypothesis that the customers' average age is 30. 
+
+
+(iii)
+
+The 95% Confidence Interval for proportion of male custoemrs is [0.5056, 0.6499]. We are 95% "confident" that this interval contains the true population proportion. More generally, with repeated random sampling from the same population (infinitely), 95% of such constructed confidence intervals would contain the true proportion of male customers.
+
+There is sufficient evidence to conclude that the company has more male customers than female customers, since 95% of the constructed interval [0.5056, 0.6499] which is completely greater than half contains the true proportion of male customers. It suggests that in 95% of the cases the proportion of male customers lies between the constructed interval [0.5056, 0.6499] which is greater than half. Thus there is sufficient evidence to believe that the proportion of male customers is greater than half, i.e. the company has more male customers than female customers.
+
+
+</p>
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+#### Q2.(b) Understanding Customer Income data
+Could you assist the team to assess whether there is any difference in mean income between
+
+- i.  female versus male customers.
+- ii. customers who purchased TM195, TM498 versus TM798. 
+
+Plot a graph for each of the comparisons, then set up the appropriate hypotheses and conduct the hypotheses tests using a 5% significance level. Type the hypotheses and your findings in the space below.  
+
+(8 marks)
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r q2b, echo=TRUE}
+
+## Type your codes here
+##(i)
+male <- d1 %>% filter(Gender=="Male")
+female <- d1 %>% filter(Gender=="Female")
+
+#check normality and outlier analyses for Income data
+#Q-Q plot
+qqnorm(d1$Income,
+       ylab="Sample Qualities for `Income` of customers")
+qqline(d1$Income, 
+       col="red")
+
+#Shapiro-Wilk test
+shapiro.test(d1$Income)
+
+#density plot
+plot(density(d1$Income), 
+     main="Density plot for `Income` of customers")
+
+#box plot
+boxplot(d1$Income, 
+        main="Boxplot for `Income` of customers")
+
+#Analysing Income data for female and male customers separately
+#Q-Q plot
+par(mfcol=c(1,2))
+qqnorm(male$Income,
+       main="QQplot for `Male`",
+       xlab="Income")
+qqline(male$Income, 
+       col="red")
+qqnorm(female$Income,
+       main="QQplot for `Female`",
+       xlab="Income")
+qqline(female$Income, 
+       col="red")
+
+#Shapiro-Wilk test
+lapply(list(male,female), 
+       function(d1) 
+         {
+         shapiro.test(d1$Income)
+         })
+
+#density plot
+par(mfcol=c(1,2))
+plot(density(male$Income), 
+     main="Density plot for `Male`")
+plot(density(female$Income), 
+     main="Density plot for `Female`")
+
+#box plot
+par(mfcol=c(1,1))
+boxplot(d1$Income ~ d1$Gender, 
+        cex.axis=0.8,
+        main="Boxplot for `Income` of customers of different genders",
+        xlab="Gender",
+        ylab="Income")
+
+# count number of customers for each gender
+table(d1$Gender)
+
+#plot graph for comparison
+#plot histograms for two genders
+par(mfcol=c(1,2))
+hist(male$Income, 
+     main="Histogram for `Male`",
+     xlab="Income")
+hist(female$Income, 
+     main="Histogram for `Female`", 
+     xlab="Income")
+
+#Apply t.test
+t.test(Income~Gender, 
+       alternative="less", 
+       data=d1)
+
+
+##(ii)
+tm195 <- d1 %>% filter(Product=="TM195")
+tm498 <- d1 %>% filter(Product=="TM498")
+tm798 <- d1 %>% filter(Product=="TM798")
+
+#Analysing Income data for customers of the three product types separately
+#Q-Q plot
+par(mfcol=c(1,3))
+qqnorm(tm195$Income,
+       main="QQplot for `TM195`",
+       xlab="Income")
+qqline(tm195$Income, 
+       col="red")
+qqnorm(tm498$Income,
+       main="QQplot for `TM498`",
+       xlab="Income")
+qqline(tm498$Income, 
+       col="red")
+qqnorm(tm798$Income,
+       main="QQplot for `TM798`",
+       xlab="Income")
+qqline(tm798$Income, 
+       col="red")
+
+#Shapiro-Wilk test
+lapply(list(tm195,tm498,tm798), 
+       function(d1) 
+         {
+         shapiro.test(d1$Income)
+         })
+
+#density plot
+par(mfcol=c(1,3))
+plot(density(tm195$Income),
+     main="Density plot for `TM195`")
+plot(density(tm498$Income),
+     main="Density plot for `TM498`")
+plot(density(tm798$Income),
+     main="Density plot for `TM798`")
+
+#box plot
+par(mfcol=c(1,1))
+boxplot(d1$Income ~ d1$Product, 
+        cex.axis=0.8,
+        main="Boxplot for `Income` of customers of different product types",
+        xlab="Product Type",
+        ylab="Income")
+
+#count number of customers for each product type
+table(d1$Product)
+
+#plot graph for comparison
+#plot histograms for three product types
+par(mfcol=c(1,3))
+hist(tm195$Income, 
+     main="Histogram for `TM195`",
+     xlab="Income")
+hist(tm498$Income, 
+     main="Histogram for `TM498`",
+     xlab="Income")
+hist(tm798$Income, 
+     main="Histogram for `TM798`", 
+     xlab="Income")
+
+#check whether the variances are equal
+fligner.test(Income ~ Product,d1)
+
+#Welch ANOVA
+wa.out1 <- d1 %>% welch_anova_test(Income~Product)
+wa.out1
+
+#games howell test
+gh.out1 <- games_howell_test(d1, Income~Product)
+gh.out1
+
+
+
+
+```
+
+<p style="color:blue">
+Type your answer here. 
+
+(i)
+
+Firstly, I conducted normality tests and outlier analyses for the `Income` variable, both as a whole and for two genders separately. My conclusion is that since the Income data is not completely normally distributed, and the data points plotted in the box plots are not significantly far away from each other, they are unlikely to be outliers.
+
+However, given that the samples are large enough (number of male customers is 104, number of female customers is 76, both are greater than 30), using Central Limit Theorem (CLT), we can assume that the sampling distribution of means will be approximately normal. Hence we can use t.test to compare the means.
+
+I plotted the histograms for the Income of two genders separately, and set up the appropriate hypotheses.
+
+H0: Mean Income of male customers is smaller than Mean Income of female customers, i.e. Mean Income of female customers - Mean Income of male customers > 0
+
+H1: Mean Income of male customers is higher than Mean Income of female customers, i.e. Mean Income of female customers - Mean Income of male customers < 0
+
+Then, I conducted the t.test to test my hypotheses at 5% significance level. The t-statistic is -2.9146, and the p-value is 0.002011. Since the p-value of 0.002011 < 0.05, we can conclude that there is sufficient evidence to support the alternative hypothesis H1 that Mean Income of male customers is higher than Mean Income of female customers, and to reject the null hypothesis H0 that Mean Income of male customers is smaller than Mean Income of female customers at 5% significance level.
+
+Therefore, we can conclude that Mean Income of male customers is higher than Mean Income of female customers at 5% significance level.
+
+
+(ii)
+
+Firstly, I conducted normality tests and outlier analyses for the `Income` variable for the three product types separately. My conclusion is that there are no outliers since there is no data point lying extremely far from the rest as indicated in the box plots.
+
+However, given that the samples are large enough (number of TM195 customers is 80, number of TM498 customers is 60, number of TM798 customers is 40, all are greater than 30), using Central Limit Theorem (CLT), we can assume that the sampling distribution of means will be approximately normal. 
+
+We also assume that the data are normally and independently obtained. 
+
+As for the third assumption of the ANOVA Test, I first checked if the sample sizes for the three product types are equal. TM195 has 80 customers, TM498 has 60 customers, and TM798 has 40 customers. The sample sizes are not equal. Therefore, I need to check if equal variance assumption is met. Fligner-Killeen test of homogeneity of variances is conducted. The p-value of 1.985e-12 < 0.05, suggesting that there is significant evidence to reject the null hypothesis that the variances are equal, and to support the alternative hypothesis that the variances are unequal. Thus, the variances are significantly unequal. 
+
+Thus, the ANOVA assumption of equal variances is not fulfilled. Welch's ANOVA Test and pairwise comparison using Games-Howell post hoc test are used. 
+
+Then I set up appropriate hypotheses.
+
+H0: Means of Income of customers of different product types are equal, i.e. Mean Income of TM195 customers = Mean Income of TM498 customers = Mean Income of TM798 customers
+
+H1: At least one mean is different from others
+
+From Welch's ANOVA Test results, we found sufficient evidence to reject H0 (p = 8.64e-14 < 0.05) and conclude that the mean income of customers buying at least 1 of the 3 types of products is significantly different from the others.
+
+From Games-Howell Test results, it is consistent with Welch's ANOVA Test results. It shows that two pairs, TM195-TM798 and TM498-TM798 have significant differences in mean Income (TM195-TM798: mean diff=29024., p adj=1.86e-12; TM498-TM798: mean diff=26468., p adj=8.89e-11) at 5% significance level. 
+
+Thus there is sufficient evidence to reject the null hypothesis that the mean income of customers buying different types of products are equal, and sufficient evidence to conclude that the mean income of customers buying different types of products are unequal at 5% significance level.
+
+
+</p>
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+#### Q2.(c) Comparing customer usage and exercise pattern
+There are two variables that capture the customers usage and exercise pattern: `Usage` and `Miles`. 
+
+- i. Test if there is any significant difference in mean `Usage` across the 3 products - TM195, TM498 versus TM798 (3 marks)
+- ii. Repeat the above test (i) for `Miles`.(3 marks)
+- iii. Test if the mean `Miles` for customers is higher for customers with "High" fitness versus those with "Low" fitness. "High" fitness is defined by customers with a self-rated fitness score that is greater than the median while "Low" fitness is defined by customer with a self-rated fitness score equal or lower than the median. (Hint: You can create a categorical variable for the two levels of Fitness.) (4 marks)
+
+Set up the appropriate hypotheses and conduct the hypotheses tests using 5% significance level. Type your hypotheses and findings in the space below.
+
+For tutorial discussion: Based on your analyses of the CardioGoodFitness restore, discuss how you think the 3 types of treadmills may differ (e.g. in terms of the features or customers that are attracted to the product). 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r q2c, echo=TRUE}
+
+## Type your codes here
+##(i)
+
+##Since it's categorical numbers, can use bar chart
+UsageFreq <- d1 %>% count(Usage)
+barplot(UsageFreq$n,
+        xlab="Usage",
+        ylab="Number of Customers",
+        main="Usage")
+
+#check normality and outlier analyses for Usage data
+#Q-Q plot
+qqnorm(d1$Usage,
+       ylab="Sample Qualities for `Usage` of products")
+qqline(d1$Usage, 
+       col="red")
+
+#Shapiro-Wilk test
+shapiro.test(d1$Usage)
+
+#density plot
+plot(density(d1$Usage), 
+     main="Density plot for `Usage` of products")
+
+#box plot
+boxplot(d1$Usage, 
+        main="Boxplot for `Usage` of products")
+
+#Analysing Usage data for products of the three types separately
+#Q-Q plot
+par(mfcol=c(1,3))
+qqnorm(tm195$Usage,
+       main="QQplot for `TM195`",
+       xlab="Usage")
+qqline(tm195$Usage, 
+       col="red")
+qqnorm(tm498$Usage,
+       main="QQplot for `TM498`",
+       xlab="Usage")
+qqline(tm498$Usage, 
+       col="red")
+qqnorm(tm798$Usage,
+       main="QQplot for `TM798`",
+       xlab="Usage")
+qqline(tm798$Usage, 
+       col="red")
+
+#Shapiro-Wilk test
+lapply(list(tm195,tm498,tm798),
+       function(d1)
+         {
+         shapiro.test(d1$Usage)
+         })
+
+#density plot
+par(mfcol=c(1,3))
+plot(density(tm195$Usage),
+     main="Density plot for `TM195`")
+plot(density(tm498$Usage),
+     main="Density plot for `TM498`")
+plot(density(tm798$Usage),
+     main="Density plot for `TM798`")
+
+#box plot
+par(mfcol=c(1,1))
+boxplot(d1$Usage ~ d1$Product,
+        cex.axis=0.8,
+        main="Boxplot for `Usage` of different product types",
+        xlab="Product Type",
+        ylab="Usage")
+
+boxplot(d1$Usage ~ d1$Product,
+        cex.axis=0.8,
+        main="Boxplot for `Usage` of different product types",
+        xlab="Product Type",
+        ylab="Usage",
+        range=3)
+
+#histogram
+par(mfcol=c(1,3))
+hist(tm195$Usage,
+     main="Histogram for `TM195`",
+     xlab="Usage")
+hist(tm498$Usage, 
+     main="Histogram for `TM498`",
+     xlab="Usage")
+hist(tm798$Usage, 
+     main="Histogram for `TM798`", 
+     xlab="Usage")
+
+#count number of products for each type
+table(d1$Product)
+
+#check whether the variances are equal
+fligner.test(Usage ~ Product, d1)
+
+#ANOVA
+aov.usage <- aov(d1$Usage ~ as.factor(d1$Product))
+summary(aov.usage)
+
+#Tukey multiple comparisons
+TukeyHSD(aov.usage)
+
+#Welch ANOVA
+wa.out2 <- d1 %>% welch_anova_test(Usage~Product)
+wa.out2
+
+#games howell test
+gh.out2 <- games_howell_test(d1, Usage~Product)
+gh.out2
+
+
+##(ii)
+#check normality and outlier analyses for Miles data
+#Q-Q plot
+par(mfcol=c(1,1))
+qqnorm(d1$Miles,
+       ylab="Sample Qualities for `Miles` of customers")
+qqline(d1$Miles, 
+       col="red")
+
+#Shapiro-Wilk test
+shapiro.test(d1$Miles)
+
+#density plot
+plot(density(d1$Miles), 
+     main="Density plot for `Miles` of customers")
+
+#box plot
+boxplot(d1$Miles, 
+        main="Boxplot for `Miles` of customers")
+
+#Analysing Miles data for products of the three types separately
+#Q-Q plot
+par(mfcol=c(1,3))
+qqnorm(tm195$Miles,
+       main="QQplot for `TM195`",
+       xlab="Miles")
+qqline(tm195$Miles, 
+       col="red")
+qqnorm(tm498$Miles,
+       main="QQplot for `TM498`",
+       xlab="Miles")
+qqline(tm498$Miles, 
+       col="red")
+qqnorm(tm798$Miles,
+       main="QQplot for `TM798`",
+       xlab="Miles")
+qqline(tm798$Miles, 
+       col="red")
+
+#Shapiro-Wilk Test
+lapply(list(tm195,tm498,tm798),
+       function(d1)
+         {
+         shapiro.test(d1$Miles)
+         })
+
+#density plot
+par(mfcol=c(1,3))
+plot(density(tm195$Miles),
+     main="Density plot for `TM195`")
+plot(density(tm498$Miles),
+     main="Density plot for `TM498`")
+plot(density(tm798$Miles),
+     main="Density plot for `TM798`")
+
+#box plot
+par(mfcol=c(1,1))
+boxplot(d1$Miles ~ d1$Product,
+        cex.axis=0.8,
+        main="Boxplot for `Miles` of different product types",
+        xlab="Product Type",
+        ylab="Miles")
+
+boxplot(d1$Miles ~ d1$Product,
+        cex.axis=0.8,
+        main="Boxplot for `Miles` of different product types",
+        xlab="Product Type",
+        ylab="Miles",
+        range=3)
+
+#histogram
+par(mfcol=c(1,3))
+hist(tm195$Miles,
+     main="Histogram for `TM195`",
+     xlab="Miles")
+hist(tm498$Miles, 
+     main="Histogram for `TM498`",
+     xlab="Miles")
+hist(tm798$Miles, 
+     main="Histogram for `TM798`", 
+     xlab="Miles")
+
+#count number of products for each type
+table(d1$Product)
+
+#check whether the variances are equal
+fligner.test(Miles ~ Product, d1)
+
+#Welch ANOVA
+wa.out3 <- d1 %>% welch_anova_test(Miles~Product)
+wa.out3
+
+#games howell test
+gh.out3 <- games_howell_test(d1, Miles~Product)
+gh.out3
+
+
+##(iii)
+#calculate median fitness
+median(d1$Fitness)
+me <- median(d1$Fitness)
+
+#create categorical variable for fitness levels
+d1$flevel <- NA
+d1$flevel[d1$Fitness>me] <- "High"
+d1$flevel[d1$Fitness<=me] <- "Low"
+d1$flevel <- as.factor(d1$flevel)
+levels(d1$flevel)
+
+high <- d1 %>% filter(flevel=="High")
+low <- d1 %>% filter(flevel=="Low")
+
+#Analysing Miles data for customers of different fitness levels separately
+#Q-Q plot
+par(mfcol=c(1,2))
+qqnorm(high$Miles,
+       main="QQplot for `High`",
+       xlab="Miles")
+qqline(high$Miles,
+       col="red")
+qqnorm(low$Miles,
+       main="QQplot for `Low`",
+       xlab="Miles")
+qqline(low$Miles,
+       col="red")
+
+#Shapiro-Wilk Test
+lapply(list(high,low),
+       function(d1)
+         {
+         shapiro.test(d1$Miles)
+         })
+
+#density plot
+par(mfcol=c(1,2))
+plot(density(high$Miles),
+     main="Density plot for `High`")
+plot(density(low$Miles),
+     main="Density plot for `Low`")
+
+#box plot
+par(mfcol=c(1,1))
+boxplot(d1$Miles ~ d1$flevel,
+        cex.axis=0.8,
+        main="Boxplot for `Miles` of customers of different fitness levels",
+        xlab="Fitness Level",
+        ylab="Miles")
+
+#histogram
+par(mfcol=c(1,2))
+hist(high$Miles,
+     main="Histogram for `High`",
+     xlab="Miles")
+hist(low$Miles,
+     main="Histogram for `Low`",
+     xlab="Miles")
+
+#count number of customers for each fitness level
+table(d1$flevel)
+
+#compare miles
+t.test(Miles~flevel, alternative="greater", data=d1)
+
+
+ 
+```
+
+<p style="color:blue">
+Type your answer here.
+
+(i)
+
+Firstly, I conducted normality tests and outlier analyses for the `Usage` variable, both as a whole and for the three product types separately. It generally follows the normal distribution, though to a limited extent. 
+
+As observed from the boxplots, there are data points for Usage data for TM498 and TM798 lying more than 1.5 IQRs away, yet they are still within 3IQRs. Since the Usage data is not completely normally distributed and is actually skewed, the 1.5 IQR rule of thumb is not applicable in this case. Since the data points do not lie far away from others, they are unlikely to be outliers.
+
+We also assume that the data are normally and independently obtained. 
+
+As for the third assumption of the ANOVA Test, I first checked if the sample sizes for the three product types are equal. TM195 has 80 customers, TM498 has 60 customers, and TM798 has 40 customers. The sample sizes are not equal. Therefore, I need to check if equal variance assumption is met. Fligner-Killeen test of homogeneity of variances is conducted. The p-value is 0.1016 > 0.05, suggesting that the variances are equal, since we cannot reject the null hypothesis that the variances are equal.
+
+Thus, ANOVA Test and Tukey multiple comparison can be used to conduct the tests.
+
+Next, I set up the hypotheses.
+
+H0: Means of Usage of products of different types are equal, i.e. Mean Usage of TM195 products = Mean Usage of TM498 products = Mean Usage of TM798 products
+
+H1: At least one mean is different from others
+
+From ANOVA test results, we found sufficient evidence to reject H0 (F=65.44, p<2e-16<0.05) and conclude that the mean usage of at least 1 of the 3 types of products is significantly different from the others at 5% significance level.
+
+To check which pairs of types of products differ significantly in mean Usage, we conduct the Tukey Multiple Comparison test. The results show that the pair TM798-TM195 (mean diff=1.68750000, p adj much smaller than 0.05) and the pair TM798-TM498 (mean diff=1.70833333, p adj much smaller than 0.05) have significant different in mean Usage.
+
+We can perform the Welch's ANOVA test and the Games-Howell Test which do not assume normality and equal variances across samples. 
+
+From Welch's ANOVA test, p-value is 3.62e-16 < 0.05. There is sufficient evidence to reject the null hypothesis that the mean usage of three types of products are equal, and to conclude that the mean usage of at least 1 of the 3 types of products is significantly different from the others at 5% significance level.
+
+From the Games-Howell Test, the pair TM798-TM195 (mean diff=1.69, p adj much smaller than 0.05) and the pair TM798-TM498 (mean diff=1.71, p adj much smaller than 0.05) have significant differences in mean Usage.
+
+
+(ii)
+
+Firstly, I conducted normality tests and outlier analyses for the `Miles` variable, both as a whole and for the three product types separately. It generally follows the normal distribution, but is skewed and is not completely normally distributed. 
+
+Since the Miles data is not completely normally distributed and is actually skewed, the 1.5 IQR rule of thumb is not applicable in this case. Since the data points do not lie far away from others, they are unlikely to be outliers.
+
+We also assume that the data are normally and independently obtained.
+
+As for the third assumption of the ANOVA Test, I first checked if the sample sizes for the three product types are equal. TM195 has 80 customers, TM498 has 60 customers, and TM798 has 40 customers. The sample sizes are not equal. Therefore, I need to check if equal variance assumption is met. Fligner-Killeen test of homogeneity of variances is conducted. The p-value is 0.0002033 < 0.05, suggesting that the variances are unequal, since there is sufficient evidence to reject the null hypotheses that the variances are equal, and to support the alternative hypotheses that the variances are unequal.
+
+Since ANOVA assumptions are not fulfilled, Welch's ANOVA Test and Games-Howell Test are conducted.
+
+Then I set up the appropriate hypotheses.
+
+H0: Means of Miles of products of different types are equal, i.e. Mean Miles of TM195 products = Mean Miles of TM498 products = Mean Miles of TM798 products
+
+H1: At least one mean is different from others
+
+From the Welch's ANOVA Test, p-value is 8.35e-12 < 0.05. There is sufficient evidence to reject the null hypothesis that the mean miles of three types of products are equal, and to conclude that the mean miles of at least 1 of the 3 types of products is significantly different from the others at 5% significance level.
+
+From the Games-Howell Test, the pair TM798-TM195 (mean diff=84.1, p adj=1.65e-10 < 0.05) and the pair TM798-TM498 (mean diff=79.0, p adj=1.28e- 9 < 0.05) have significant differences in mean Usage.
+
+
+(iii)
+
+Firstly, I calculated the median of Fitness which is 3. Then I created categorical variable for fitness levels.
+
+Since the Miles data is not completely normally distributed and is actually skewed, the 1.5 IQR rule of thumb is not applicable in this case. Since the data points do not lie far away from others, they are unlikely to be outliers.
+
+Then I analysed the `Miles` variable for customers of different fitness levels separately. Both follow normal distribution to a large extent. Also, by Central Limit Theorem (CLT), since High fitness level has 55 customers and Low fitness level has 125 customers, both greater than 30, they follow the normal distribution.
+
+Next, I set up the hypotheses. 
+
+H0: Mean Miles of customers with `High` fitness level is lower than Mean Miles of customers with `Low` fitness level, i.e. Mean Miles of customers with `High` fitness level - Mean Miles of customers with `Low` fitness level < 0
+
+H1: Mean Miles of customers with `High` fitness level is greater than Mean Miles of customers with `Low` fitness level, i.e. Mean Miles of customers with `High` fitness level - Mean Miles of customers with `Low` fitness level > 0
+
+Then I conducted the t-test. The p-value is 5.667e-15 < 0.05. Thus there is sufficient evidence at 5% significance level to reject the null hypothesis that Mean Miles of customers with `High` fitness level is lower than Mean Miles of customers with `Low` fitness level, and to conclude that Mean Miles of customers with `High` fitness level is greater than Mean Miles of customers with `Low` fitness level.
+
+</p>
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+
+
+
+
+
+

@@ -1,0 +1,457 @@
+---
+title: "BT1101-Tutorial 5 (Part 2 Deadline: 11 Mar 9am)"
+output: html_document
+---
+
+## Introduction to R Markdown
+
+R Markdown, is an extremely useful tool that professional data scientists and business analysts use in their day-to-day work.
+
+You can open R Markdown documents in RStudio as well. You should see a little command called "Knit", which allows you to "knit" the entire R Markdown file into a HTML document, or a PDF document, or a MS Word Document (note, for MS Word, you'll need MS Word installed on your system; for PDF, you need to have Tex/Latex distribution installed).
+
+R Markdown is nice to use simply because it allows you to embed both code and write-up into the same document, and it produces presentable output, so you can use it to generate reports from your homework, and, when you eventually go out to work in a company, for your projects.
+
+Here's how you embed a "chunk" of R code.
+
+```{r example-chunk, echo=TRUE}
+1+1
+```
+
+After the three apostrophes, you'll need `r`, then you can give the chunk a name. Please note that **CHUNK NAMES HAVE TO BE A SINGLE-WORD, NO SPACE ALLOWED**. Also, names have to be unique, that is, every chunk needs a **different** name (this has led to rendering failures in previous final exams). You can give chunks names like:
+
+- `chunk1`
+- `read-in-data`
+- `run-regression`
+
+or, what will help you with homework:
+
+- `load-library`
+- `q1.(a)` etc
+
+These names are for you to help organize your code. (In practice it will be very useful when you have files with thousands of lines of code...). After the name of the chunk, you can give it certain options, separated by commas. I will highlight one important option. 
+
+- `echo=TRUE` means the code chunk will be copied into the output file. For homework purposes, **ALWAYS** set `echo=TRUE` so we know what code you wrote. When you go out to work in a company and you want to produce nice looking reports, feel free to set it to FALSE.
+
+
+There is a lot to syntax to learn using the R Markdown, but we don't need you to be an expert in R Markdown (although we do expect proficiency in R!). Hopefully, you can copy all the R Markdown syntax you need from the templates we provide. 
+
+
+Note about *working directories* in R Markdown. If you do not specify your working directory via `setwd('...')`, and you hit `Knit`, the document will assume that the working directory is the directory that the `.rmd` file is in. Thus, if your rmd is in `XYZ/folder1/code.rmd` and your dataset is `XYZ/folder1/data.csv`, then you can simply run `d0 <- read.csv('data.csv')` without running `setwd()`.
+
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- We would recommend that you play with the PDF file using pdf_document for your own benefit. We only require `html` format for assignments and exam.
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with the answer of your own.  (This is usually the descriptive and explanation part of your answer)
+- Submit *only* the required question for grading (Part 2: For Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]-[MatricNumber].rmd`, and the output will automatically be `T[X]-[MatricNumber].html`.
+    - for example, `T5-12345.html`
+    - X is the Tutorial number at the top of this file. For example, this file is for "T5".
+- Submit both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for the exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** You are responsible for de-bugging and programming in the exam.
+
+## Preparation
+
+## Tutorial 5
+
+```{r load-libraries, echo=TRUE}
+# install required packages if you have not (suggested packages: rcompanion, rstatix, Rmisc, dplyr, tidyr, rpivotTable, knitr, psych)
+# install.packages("dplyr") #only need to run this code once to install the package
+# load required packages 
+# library("xxxx")
+
+library("rcompanion")
+library("rstatix")
+library("Rmisc")
+library("dplyr")
+library("tidyr")
+library("rpivotTable")
+library("knitr")
+library("psych")
+
+
+```
+
+
+## Tutorial 5 Question 1 (For lab in week 7)
+- Dataset required: `Sales Transactions.xlsx`
+
+`Sales Transactions.xlsx` contains the records of all sale transactions for a day, July 14. Each of the column is defined as follows:
+
+- `CustID` :  Unique identifier for a customer
+- `Region`: Region  of customer's home address 
+- `Payment`: Mode of payment used for the sales transaction
+- `Transction Code`: Numerical code for the sales transaction
+- `Source`: Source of the sales (whether it is through the Web or email)
+- `Amount`: Sales amount
+- `Product`: Product bought by customer
+- `Time Of Day`: Time in which the sales transaction took place. 
+
+
+```{r read-dataset1, echo=TRUE}
+#put in your working directory folder pathname ()
+#import data file into RStudio
+library(readxl)
+ST <- read_excel("/Users/jingyizhang/Desktop/BT1101/Tutorials/Tutorial 5 - Statistical Inference/Sales Transactions.xlsx",
+                 skip=2)
+head(ST)
+```
+
+<p>
+**In the last tutorial, you were tasked to help the store manager develop dashboards that will enable him to gain better insights of the data. In this tutorial, you will use the data to conduct sampling estimation and hypotheses testing. Where necessary, check the distribution for the variables and for the presence of outliers.**
+
+**You may use the following guideline to round off your final answers: If the answer is greater than 1, round off to 2 decimal places. If the answer is less than 1, round off to 3 significant numbers. When rounding, also take note of the natural rounding points, for example, costs in dollars would round off to 2 decimal places. **
+</p>
+
+
+### Q1.(a) Computing Interval Estimates
+**Using the sale transaction data on July 14,**
+
+- i) compute the 95% and 99% confidence intervals for the mean of `Amount` for DVD sale transactions. Which interval is wider and how does a wider interval affect type 1 error?
+- ii) compute the 90% confidence interval for proportion of DVD sale transactions with sales amount being greater than \$22. Could the company reasonably conclude that the true proportion of DVD sale transactions with sales amount greater than \$22 is 30%? 
+- iii) compute the 95% prediction interval for `Amount` for sales of DVD. Explain to the store manager what this prediction interval mean? 
+
+For tutorial discussion: What would you do to compute the interval estimates for book sales instead of DVD sales? 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r q1a, echo=TRUE}
+# Enter your codes here
+##(i)
+#filter for rows containing DVD sales transactions
+dfD <- ST %>% filter(Product=="DVD")
+
+#outlier analyses for Amount data
+plot(density(dfD$Amount), main="Density plot for `Amount` for DVD orders")
+
+boxplot(dfD$Amount, main="Boxplot for `Amount` for D orders")
+
+#unknown population standard deviation, thus t-test is used
+
+#compute manually 95% CI for mean DVD `Amount`
+uCIamt95 <- mean(dfD$Amount) - qt(0.025, df=nrow(dfD)-1)*sd(dfD$Amount)/sqrt(nrow(dfD))
+lCIamt95 <- mean(dfD$Amount) + qt(0.025, df=nrow(dfD)-1)*sd(dfD$Amount)/sqrt(nrow(dfD))
+print(cbind(lCIamt95, uCIamt95), digits=4)
+
+#compute manually 99% CI for mean DVD `Amount`
+uCIamt99 <- mean(dfD$Amount) - qt(0.005, df=nrow(dfD)-1)*sd(dfD$Amount)/sqrt(nrow(dfD))
+lCIamt99 <- mean(dfD$Amount) + qt(0.005, df=nrow(dfD)-1)*sd(dfD$Amount)/sqrt(nrow(dfD))
+print(cbind(lCIamt99, uCIamt99), digits=4)
+
+##(ii)
+d22 <- dfD %>% filter(Amount>22)
+pd22 <- nrow(d22)/nrow(dfD)
+uCIpd22 <- pd22 - (qnorm(0.05)*sqrt(pd22
+                                    *(1-pd22)/nrow(dfD)))
+lCIpd22 <- pd22 + (qnorm(0.05)*sqrt(pd22
+                                    *(1-pd22)/nrow(dfD)))
+print(cbind(lCIpd22, uCIpd22), digits=3)
+
+
+##(iii)
+#check normality
+qqnorm(dfD$Amount,
+       ylab="Sample Qualities for `Amount` for DVD orders")
+qqline(dfD$Amount, col="red")
+
+shapiro.test(dfD$Amount)
+
+#transform data to normal distribution using transformTukey
+dfD$Amt.t = transformTukey(dfD$Amount, plotit=TRUE)
+
+#using x^lambda where lambda = 0.6
+##output of the Turkey transformation was stored in dfD$Amt.t
+mnamt.t <- mean(dfD$Amt.t)
+sdamt.t <- sd(dfD$Amt.t)
+lPI.amtt <- mnamt.t + (qt(0.025, df=(nrow(dfD)-1))*sdamt.t*sqrt(1+1/nrow(dfD)))
+uPI.amtt <- mnamt.t - (qt(0.025, df=(nrow(dfD)-1))*sdamt.t*sqrt(1+1/nrow(dfD)))
+cbind(lPI.amtt, uPI.amtt)
+
+#reverse transform; comments below is to derive the formula
+# y = x^lambda
+# y = x^0.6
+# x = y^(1/0.6)
+lPI.amt <- lPI.amtt^(1/0.6)
+uPI.amt <- uPI.amtt^(1/0.6)
+
+#reverse transform
+print(cbind(lPI.amt, uPI.amt), digits=4)
+
+```
+
+<p style="color:blue">
+Type your answer here.
+
+(i)
+The 99% interval is wider -> which should make sense intuitively, since we are more confident that the true mean of Amount falls within this range
+Probability of Type I error = a -> a wider interval decreases the likelihood of mistakenly rejecting a true null hypothesis
+
+(ii)
+Yes, as a proportion of 30% falls within the 90% confidence interval
+
+(iii)
+95% of predicting value of a new observation falls within the interval
+
+</p>
+
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+### Q1.(b) Hypothesis Testing
+**The store manager would like to draw some conclusions from the sample sales transaction data. He would like to retain all the data for the analyses. Please help him to set up and test the following hypotheses.**
+
+- i) The proportion of book sales transactions with `Amount` greater than $50 is at least 10 percent of book sales transactions.
+- ii) The mean sales amount for books is the same as for dvds. 
+- iii) The mean sales amount for rare books is greater than mean sales amount for normal books. Rare books are books where `Amount` is greater than 100, while normal books are those where `Amount` is less than or equal to 100. (Hint: Create a new categorical variable to group the books into Rare vs Normal types.)
+- iv) The mean sales amount for dvds is the same across all 4 regions. 
+
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r q1b, echo=TRUE}
+
+# Enter your codes here
+##(i)
+#compute z-statistic for proportion
+book <- ST %>% filter(Product == "Book")
+bk50 <- book %>% filter(Amount>50)
+pbk50 <- nrow(bk50)/nrow(book)
+pbk50
+
+z <- (pbk50 - 0.10) / sqrt(0.1*(1-0.1)/nrow(book))
+z
+
+#compute critical value
+cv95 <- qnorm(0.95)
+cv95
+
+z>cv95
+
+##(ii)
+t.test(Amount~Product, data=ST)
+
+##(iii)
+#create categorical variable for book type
+book$bktype <- NA
+book$bktype[book$Amount>100] <- "Rare"
+book$bktype[book$Amount<=100] <- "Normal"
+book$bktype <- as.factor(book$bktype)
+levels(book$bktype)
+
+#compare amount
+t.test(Amount~bktype, alternative="less", data=book)
+
+##(iv)
+#check if ANOVA assumptions are met
+#check normality
+par(mfcol=c(2,2))
+ST.dvd <- ST %>% filter(Product=="DVD")
+E <- ST.dvd %>% filter(Region == "East")
+W <- ST.dvd %>% filter(Region == "West")
+N <- ST.dvd %>% filter(Region == "North")
+S <- ST.dvd %>% filter(Region == "South")
+
+#plot histogram
+hist(E$Amount, main="Histogram for `East`", xlab="Amount")
+hist(W$Amount, main="Histogram for `West`", xlab="Amount")
+hist(N$Amount, main="Histogram for `North`", xlab="Amount")
+hist(S$Amount, main="Histogram for `South`", xlab="Amount")
+
+#plot boxplots
+boxplot(ST.dvd$Amount ~ ST.dvd$Region)
+
+#Shapiro Wilk Test
+lapply(list(E,W,N,S),
+       function(sa)
+         {
+         shapiro.test(sa$Amount)
+         })
+
+#plot qqplots
+par(mfcol=c(2,2))
+qqnorm(E$Amount, main="QQplot for `East`", xlab="Amount")
+qqline(E$Amount)
+qqnorm(W$Amount, main="QQplot for `West`", xlab="Amount")
+qqline(W$Amount)
+qqnorm(N$Amount, main="QQplot for `North`", xlab="Amount")
+qqline(N$Amount)
+qqnorm(S$Amount, main="QQplot for `South`", xlab="Amount")
+qqline(S$Amount)
+
+#check sample sizes across regions
+#If group sizes are similar, ANOVA is fairly robustt to unequal variances.
+#However, that is not the case for our data - hence, we conduct a more than two-sample test for variances.
+table(ST.dvd$Region)
+
+#check equal variance assumption
+fligner.test(Amount ~ Region, ST.dvd)
+
+#conduct ANOVA, or directly perform Welch Anova
+aov.amt <- aov(ST.dvd$Amount ~ as.factor(ST.dvd$Region))
+summary(aov.amt)
+
+TukeyHSD(aov.amt)
+
+#Welch ANOVA
+wa.out1 <- ST.dvd %>% welch_anova_test(Amount~Region)
+
+#games howell test does not assume normality and equal variances
+gh.out1 <- games_howell_test(ST.dvd, Amount~Region)
+wa.out1
+
+gh.out1
+
+```
+
+<p style="color:blue">
+
+Type your answer here.
+
+(i)
+As expected, since the test statistic is greater than our critical value, we reject the null hypothesis that proportion <= 10%
+
+(ii)
+The t-statistic is 8.03. Since p < 0.05, we can conclude that there is a significant difference between the mean sales amount for books and DVDs.
+Note - report the test statistic adn p-value when stating the results of a test
+
+(iii)
+The t-statistic is -40.55. Since p < 0.05, we can conclude that the mean sales amount for normal books is significantly less than the mean sales amount for rare books
+
+(iv)
+Since p > 0.05, we do not reject the null hypothesis that the mean sales amount for DVDs is the same across all 4 regions.
+
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+### Tutorial 5 Part 2: CardioGood Fitness (To be Submitted; 30 marks)
+Context:  Your market research team at AdRight is assigned to study the profile of the typical customer for each treadmill product offered by CardioGood Fitness. The team decides to collect data on individuals who purchased a treadmill at a CardioGoodFitness retail store during the prior three months. 
+
+The data are stored in the `CardioGoodFitness.csv` file. The team identifies the following customer variables to study: 
+
+- `Product`: product purchased (TM195, TM498, or TM798)
+- `Age`: in years
+- `Gender`: Female or Male
+- `Education`: number of years of education 
+- `MaritalStatus`: Single or Partnered
+- `Usage`: average number of times the customer plans to use the treadmill each week
+- `Fitness`: self-rated fitness on an 1-to-5 scale, where 1 is poor shape and 5 is excellent shape. 
+- `Income`: annual household income ($)
+- `Miles`: average number of miles the customer expects to walk/run each week
+
+<p>
+**In Tutorial 4, you were tasked by your team to help create the dashboards and analytics towards a better understanding of the customer profile of the CardioGood Fitness treadmill product line. In this tutorial you will help to develop estimates and to conduct some hypothesis testings. Where necessary, check the distribution for the variables and for the presence of outliers <FONT COLOR=blue>(4 marks for outlier analyses). </FONT COLOR>**
+</p>
+
+<p>
+**To encourage you to learn to debug your RMD file and be able to knit your RMD file to HTML, we will also award <FONT COLOR=blue> 1 mark for including your HTML file in your submission </FONT COLOR>. If you have any error codes in your RMD file that you are unable to fix prior to your assignment submission, you may add a # sign to comment away the error codes so that the RMD file can knit.**
+</p>
+
+```{r data-read-in2, echo=T, eval=T}
+## Please check that the .csv file is in the same directory as your Rmd file.
+
+
+
+
+
+```
+
+
+#### Q2.(a) Computing Interval Estimates
+Using the data that the team has collected:  
+
+- i. Find the 95% prediction interval for `Age`. Explain this finding to the team. (3 marks)
+- ii. Develop the 95% confidence interval for mean customer age. Based on this confidence interval, explain to the team if there is sufficient evidence to conclude that its customers' average age is 30?  (2 marks)
+- iii. Develop the 95% confidence interval for the true proportion of male customers. From this interval estimate, should the team believe that the company has more male customers than female customers?) (2 marks)
+
+Type your findings and explanations in the space below.  
+
+For tutorial discussion: Repeat the above with 90% intervals. Compare the widths of the 90% intervals vs  95% intervals. Which intervals provide better precision? 
+
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r q2a, echo=TRUE}
+
+## Type your codes here
+
+
+
+
+```
+
+<p style="color:blue">
+Type your answer here.
+
+
+
+</p>
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+#### Q2.(b) Understanding Customer Income data
+Could you assist the team to assess whether there is any difference in mean income between
+
+- i.  female versus male customers.
+- ii. customers who purchased TM195, TM498 versus TM798. 
+
+Plot a graph for each of the comparisons, then set up the appropriate hypotheses and conduct the hypotheses tests using a 5% significance level. Type the hypotheses and your findings in the space below.  
+
+(8 marks)
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r q2b, echo=TRUE}
+
+## Type your codes here
+
+
+
+
+```
+
+<p style="color:blue">
+Type your answer here. 
+
+
+
+</p>
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+#### Q2.(c) Comparing customer usage and exercise pattern
+There are two variables that capture the customers usage and exercise pattern: `Usage` and `Miles`. 
+
+- i. Test if there is any significant difference in mean `Usage` across the 3 products - TM195, TM498 versus TM798 (3 marks)
+- ii. Repeat the above test (i) for `Miles`.(3 marks)
+- iii. Test if the mean `Miles` for customers is higher for customers with "High" fitness versus those with "Low" fitness. "High" fitness is defined by customers with a self-rated fitness score that is greater than the median while "Low" fitness is defined by customer with a self-rated fitness score equal or lower than the median. (Hint: You can create a categorical variable for the two levels of Fitness.) (4 marks)
+
+Set up the appropriate hypotheses and conduct the hypotheses tests using 5% significance level. Type your hypotheses and findings in the space below.
+
+For tutorial discussion: Based on your analyses of the CardioGoodFitness restore, discuss how you think the 3 types of treadmills may differ (e.g. in terms of the features or customers that are attracted to the product). 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r q2c, echo=TRUE}
+
+## Type your codes here
+
+
+
+ 
+```
+
+<p style="color:blue">
+Type your answer here.
+
+
+
+</p>
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+
+
+
+
+
+

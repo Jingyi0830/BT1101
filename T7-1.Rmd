@@ -1,0 +1,553 @@
+---
+title: "Tutorial 7: Logistic Regression and Time Series Forecasting"
+author: "BT1101 Student. REPLACE WITH YOUR NAME"
+date: 'Due by 25/03/2022 8:00 AM'
+output: html_document
+---
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with your own.
+- Submit *only* the required question for grading (Part 2: Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]_[MatricNumber].rmd`, and the output will automatically be `T[X]_[MatricNumber].html`. 
+    - for example, `T6_12345.html`
+    - X is the Tutorial number at the top of this file.
+- Submit your both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for practical exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** You are responsible for de-bugging and programming in the practical exam.
+
+## Preparation
+
+```{r load-libraries, echo=FALSE, warning = FALSE, message = FALSE}
+# load required packages
+# install any package below if it's first time loaded in your computer.
+library(dplyr)
+library(tidyr)
+library(tseries) 
+library(TTR) # One alternative for time-series in R
+library(forecast) # An alternative for time series in R
+library(car) # "Companion to Applied Regression" package, for F-test for linear combination of regression coefs
+library(wooldridge) # wooldridge data set will be used in this tutorial
+library(ggplot2) # optional. we expect you to know base graphics, but allow ggplot if you find it easier
+```
+## Part One: Lab Session Completion and Discussion
+
+### Question 1 
+
+- Dataset required: `SGHDBp.csv`
+
+Note: This dataset comes from publically available data from the Singapore Department of Statistics, or SingStat. https://data.gov.sg/dataset/hdb-resale-price-index. 
+
+First, load in the dataset for this question. There is only one variable, which is the average HDB resale price index. Q1 of 2009 is set as the "base" period, and thus has by definition an index value of 100. The index values of the rest of the years are relative to this base value (so a value of 120 means that the average HDB resale price index for that quarter is 120% (or 1.2x) that of the index of Q1/2009).
+
+The code below will also "hold out" Years 2018 and 2019, to test the predictions of our model. This means that we fit the model using all the years except 2018 and 2019, and then once we have the fitted model, we see how well it does on 2018 and 2019.
+
+```{r q1-read-in-dataset, echo=TRUE}
+d1_wide = read.csv('SGHDBp.csv', header=T, na.strings = "NA")
+# removing unused columns
+d1_wide_HELDOUT <- d1_wide[,114:119] # HOLDING OUT values in 2018 and 2019
+d1_wide <- d1_wide[,2:113] # keeping values up to and including 2016
+
+# convert to a `ts` object:
+d1_ts = ts(unlist(d1_wide[1,1:ncol(d1_wide)], use.names=F), frequency=4, start = c(1990, 1))
+
+# also create a long form data frame. If you are interested in learning more about dplyr, try understanding what each step in this code does by running each line separately (without the last %>%), and inspecting the resulting file using head(d1_long)
+d1_long <- d1_wide %>% 
+  # gather() converts wide-form to long-form. 
+  gather(key="YearQuarter", value="PriceIndex") %>%
+  # remove the annoying "X"
+  mutate_at("YearQuarter", function(x) {sub(pattern="X", replacement="", x)}) %>% 
+  # split "YearQuarter" into a "Year" variable and a "Quarter" variable
+  # and make a variable called "TimeIndex" that just goes 1, 2, 3, 4...
+  mutate( Year = as.numeric(substr(YearQuarter, start=1, stop=4)),
+          Quarter = substr(YearQuarter, start=6, stop=7),
+          TimeIndex = 1:length(YearQuarter)) %>%
+  # Rearrange the columns in a nicer order
+  select("TimeIndex", "YearQuarter", "Year", "Quarter", "PriceIndex")
+```
+
+(1a) First, plot the data. There is only one variable, so just plot this against time on the horizontal axis. What do you notice? (Stationary? Trend? Seasons? Cycles?)
+
+<p style="color:red">
+Trend: going upwards. There seems to be an increasing trend. There does not seemto be any apparent seasonal effect.
+</p>
+
+<p style="color:red">
+Seasonality occurs over fixed intervals. Cyclicality shows fluctuation with no fixed intervals.
+</p>
+
+```{r q1a-plot, echo=TRUE}
+# type your code here
+d1_ts
+
+plot(d1_ts)
+```
+
+
+
+(1b) Calculate a Simple Moving Average model to the data, using the Equation we had in class, where 
+$m_t = (y_{t} + y_{t-1} + \cdots + y_{t-K+1})/K$
+
+Calculate one with window size of 4 periods (1 year). Calculate a second one of 16 periods (4 years). Plot these two (and the actual data) on the same plot. Discuss what you see.
+
+<p style="color:red">
+The lines do seem "offset" to the right. This is because moving average means models can "follow" recent changes, but they are not always a little slow, and playing catch up.
+</p>
+
+<p style="color:red">
+They do not model trends, so they can only "catuch up" when they have observed something in the past. That is why the peaks / troughs always happen earlier in the real data than in the moving averages.
+</p>
+
+```{r q1b-sma, echo=TRUE}
+# type your code here
+d1_long$ma4 = TTR::SMA(d1_long$PriceIndex, n=4)
+d1_long$ma16 = TTR::SMA(d1_long$PriceIndex, n=16)
+
+ggplot(d1_long,
+       aes(x=TimeIndex)) +
+  geom_line(aes(y=PriceIndex)) +
+  geom_line(aes(y=ma4),
+            col="blue") +
+  geom_line(aes(y=ma16),
+            col="green") +
+  theme_bw()
+
+```
+
+
+
+(1c) Based on what you observed about the time-series in Q1a, fit a HoltWinters model to the data. Use the model to predict the next 6 periods (6 quarters), and plot the predictions.
+
+<p style="color:red">**Type your answer here.**</p>
+
+```{r q1c-holtwinters, echo=TRUE}
+# type your code here
+hw1 = HoltWinters(d1_ts, gamma=FALSE)
+hw1
+
+hw1_pred <- predict(hw1, n.ahead=6)
+
+plot(hw1, hw1_pred)
+```
+
+
+
+
+(1d) Compare the HoltWinters model's (Q1c) predictions with `d1_wide_HELDOUT`, which contains the actual values for 2018/2019. (Hint: use `XXX[1:Y]` to extract the first few values from the `predict` object). 
+
+What is the mean sum of squared error for these 6 predicted data points? Take the square root of that, which gives the root-mean-squared-error, or RMSE. Report the RMSE.
+
+$RMSE = \sqrt{\frac{1}{n}\sum_i(\hat{y}_i-y_i)^2}$
+
+Make a plot of the Holt-Winters predictions and the actual values in `d1_wide_HELDOUT`, both on the y axis and with time on the horizontal axis. Use colors and/or linetypes to differentiate, and include a legend.
+
+(Bonus: why did I not ask you to use the Simple Moving Average model to forecast the held-out dataset?)
+
+
+<p style="color:red">
+Sum of squared errors = 0.3216667, RMSE = 0.5671567.
+</p>
+
+<p style="color:red">
+NOTE: If they (correctly) fir a HW model WITHOUT the seasonal component (i.e. with `gamma` = FALSE), the RMSE should be 0.5671567.
+</p>
+
+<p style="color:red">
+If they (incorrectly) fir the model WITH the seasonal component (i.e., forgetting to specify `gamma` = FALSE), the RMSE will be much (worse), at 2.7803346.
+</p>
+
+<p style="color:red">
+
+</p>
+
+
+```{r q1d-holtwinters-rmse-plot, echo=TRUE}
+# type your code here
+sum_squared_errors_hw1 = mean(as.numeric((hw1_pred[1:6] - as.vector(d1_wide_HELDOUT))^2))
+sum_squared_errors_hw1
+
+rmse_hw1 = sqrt(sum_squared_errors_hw1)
+rmse_hw1
+
+plot_min_value = min(c(hw1_pred[1:6]),
+                     unlist(as.vector(d1_wide_HELDOUT)))
+plot_max_value = max(c(hw1_pred[1:6]),
+                     unlist(as.vector(d1_wide_HELDOUT)))
+plot(1:6,
+     hw1_pred[1:6],
+     type='l',
+     col="red",
+     ylim=c(plot_min_value, plot_max_value),
+     xlab="Time",
+     ylab="Price")
+lines(1:6,
+      as.vector(d1_wide_HELDOUT),
+      type="l",
+      col="black")
+legend(x=1,
+       y=135,
+       legend=c("Holt-Winters", "actual"),
+       col=c("red", "black"))
+```
+
+
+
+(1e) For the second-half of this question we shall be using a dataset that's available in R. Load in the dataset using `data(ChickWeight)`. The dataset will then be stored in a variable called `ChickWeight`
+
+There are 4 variables in this long-form dataset, with 578 observations, that comes from a longitudinal experiment in which chicks (baby chickens) were given different types of diets since birth, and the chicks' weights were measured at various time-points. The variables are:
+
+- `weight`. Body weight of the chick at that time point (in grams).
+- `Time`. A numeric variable, measuring days since birth at the time of weight measurement. 
+- `Chick`. A `factor` that represents a unique Chick. There are in total 50 unique chicks.
+- `Diet`. A `factor` with levels 1,2,3,4 that represents the diet that the chicks were fed.
+
+```{r q1e-read-in-data, echo=TRUE}
+data(ChickWeight)
+head(ChickWeight)
+```
+
+First, let's plot some time-series data. Plot the weight vs. time graphs for Chick numbers: `3, 20 and 24`. Put them all on the same graph, make sure each `Chick`'s data is connected by a line, and label each line accordingly.
+
+Which diet did each of these 3 chicks take?
+
+<p style="color:red">
+Chicks 3 and 20 took Diet 1, and Chick 24 took Diet 2 respectively.
+</p>
+
+
+```{r q1e-plot, echo=TRUE}
+# type your code here
+subset2a = subset(ChickWeight, ChickWeight$Chick %in% c("3", "20", "24"))
+
+ggplot(subset2a,
+       aes(x=Time,
+           y=weight,
+           group=Chick,
+           color=Chick)) +
+  geom_line() +
+  theme_bw()
+
+```
+
+
+
+(1f) From (Q1e), you can already see that (i) there is a lot of individual variation between chicks with the same diet, and (ii) there may be differences across diets. Of course, we just took three chicks to plot, so we can't draw any conclusions just like that. 
+
+Make a subset of all the chicks that took `Diet 3`. For this subset, fit a linear model predicting `weight` just using `Time`. This is a regression-based time-series model where our predictor, our "X", is just an index now that represents time. Interpret the intercept and slope coefficients.
+
+(Challenge: Try to plot all the `Chick`s on this diet on the same plot. Make sure each line corresponds to one `Chick`.)
+
+<p style="color:red">
+Intercept: 18.250. This means average weight of a chick **ON DIET 3** at birth is 18.25g. 
+</p>
+
+<p style="color:red">
+Coefficient on `Time`: 11.423. This means that, on average, chicks **ON DIET 3** put on 11.42g per day. 
+</p>
+
+
+```{r q1f-model, echo=TRUE}
+# type your code here
+subset2b = ChickWeight %>% 
+  filter(Diet %in% c("3"))
+
+summary(lm(weight ~ Time, subset2b))
+
+ggplot(subset2b,
+       aes(x=Time,
+           y=weight,
+           group=Chick,
+           color=Chick)) +
+  geom_line() +
+  theme_bw()
+```
+
+
+(1g) Now let's look at two groups. Make a subset of `Chicks` who are on `Diet 3` and `Diet 1`. Make a dummy variable to indicate which `Diet` they are on. (To give you some practice in manipulating variables, let's say that 3 is the reference group, and this dummy variable should be 1 if the Chick is on Diet 1 and 0 if the Chick is on Diet 3).
+
+If I'm interested in seeing whether the `Diet` affects `Chicks`' growth, what is the linear regression model I should test? Run this model, and interpret the coefficients on the variables in the model. Which of the two `Diet`s seem to be better for growth?
+
+(Challenge: Try to plot all the Chicks in this analysis on the same plot. Similar to Q1f, make sure each Chick corresponds to one line. But for this graph, let's color the lines by Diet. This may help you to visualize the coefficients you see in the model.)
+
+<p style="color:red">
+Intercept: 18.250. This means average weight of a chick **ON DIET 3** at birth is 18.25g. This should be the same number as Q1f.
+</p>
+
+<p style="color:red">
+Coefficient on `Time`: 11.423. This means that, on average, chicks **ON DIET 3** put on 11.42g per day. Again, this should be the same as Q1f.
+</p>
+
+<p style="color:red">
+Coefficient on `Dummy`: 12.68. This means that, on average, **at birth** chicks on Diet 1 are 12.68g heavier than chicks on Diet 3.
+</p>
+
+<p style="color:red">
+Coefficient on `Time:Dummy`: -4.5811. This means that, on average, chicks **ON DIET 1** put on -4.5811g per day LESS than chicks on Diet 3. This is statistically significant, so this means that the growth of Chicks on Diet 1 is LESS than chicks on Diet 3.
+</p>
+
+```{r q1g-model, echo=TRUE}
+# type your code here
+subset2c = ChickWeight %>% filter(Diet %in% c("1", "3"))
+subset2c$dummy <- NA
+subset2c$dummy[subset2c$Diet=="3"] <- 0
+subset2c$dummy[subset2c$Diet=="1"] <- 1
+
+summary(lm(weight ~ Time*dummy, subset2c))
+
+ggplot(subset2c,
+       aes(x=Time,
+           y=weight,
+           group=Chick,
+           color=Diet)) +
+  geom_line() +
+  theme_bw()
+
+#tutor's answer
+
+```
+
+
+(1h) Finally, let's look at all four `Diet`s. This last part is building up from the previous sub-parts. You already know enough to do this, you just have to be very careful in interpreting each step.
+
+Now, let's use the full dataset. `ChickWeight$Diet` is already a factor, so let's just use `Diet` as the moderator, and see if `Diet` moderates growth rates. You should be running the same `lm()` model 
+
+What is the reference group of: `ChickWeight$Diet`?
+
+How do you interpret each interaction coefficients?
+
+
+Which seems to be the best `Diet` for growth (i.e., with the highest growth rate)? Which seems to be the worst?
+
+
+(challenge points for plotting all these results. One way I would recommend visualizing them is putting all the `Chick`s in one `Diet` on one graph, and have four graphs side-by-side. If you use ggplot it's called facet-ing. Your tutor will show this graph in class using `ggplot`, but I will leave this as a bonus challenge for you.)
+
+
+<p style="color:red">
+`Intercept`: 30.93. This means average weight of a chick **ON DIET 1** at birth is 30.93g.
+</p>
+
+<p style="color:red">
+Coefficient on `Time`: 6.8418. This means that, on average, chicks **ON DIET 1** put on 6.84g per day.
+</p>
+
+<p style="color:red">
+Coefficient on `Diet2`: -2.2974. This means that, on average, **at birth** chicks **ON DIET 2** are 2.29g lighter than chicks on Diet 1 (reference group).
+</p>
+
+<p style="color:red">
+Coefficient on `Diet3`: -12.6807. This means that, on average, **at birth** chicks **ON DIET 3** are 12.68g lighter than chicks on Diet 1 (reference group).
+</p>
+
+<p style="color:red">
+Coefficient on `Diet4`: -0.1389. This means that, on average, **at birth** chicks **ON DIET 4** are 0.14g lighter than chicks on Diet 1 (reference group).
+</p>
+
+<p style="color:red">
+Coefficient on `Time:Diet2`: 1.76. This means that, on average, chicks **ON DIET 2** put on 1.76g per day MORE than chicks on Diet 1.
+</p>
+
+<p style="color:red">
+Coefficient on `Time:Diet3`: 4.58. This means that, on average, chicks **ON DIET 3** put on 4.58g per day MORE than chicks on Diet 1.
+</p>
+
+<p style="color:red">
+Coefficient on `Time:Diet4`: 2.87. This means that, on average, chicks **ON DIET 4** put on 2.87g per day MORE than chicks on Diet 1.
+</p>
+
+```{r q1h-model, echo=TRUE}
+# type your code here
+summary(lm(weight ~ Time*Diet, ChickWeight))
+
+ggplot(ChickWeight,
+       aes(x=Time,
+           y=weight,
+           group=Chick,
+           color=Chick)) +
+  geom_line() +
+  facet_grid(~Diet) +
+  theme_bw() +
+  theme(legend.position = "None")
+```
+
+
+
+## Part Two: Assignment Submission (25 points)
+
+### Question 3 (18 points)
+
+We shall study women fertility rates with two time-series datasets on U.S. and Singapore, respectively. 
+
+High fertility rate is essential for long-term growth in any economy. Many countries are troubled low or even negative fertility rate. For example, the fertility rate in Singapore in general shows a decreasing trend in recent decades (https://www.channelnewsasia.com/news/singapore/number-of-babies-born-in-singapore-falls-to-lowest-in-8-years-11743722). Fertility is affected by many socio-economic factors, including single rate, family disposable income, level of tax duty, war attrition, contraception technology, etc. 
+
+Let's first take a look at the fertility rate in the United States in 20th century. `fertil3` data contains information about woman's fertility rate and personal tax exemption in U.S. in early-mid 1900s. 
+
+- Dataset required: `data('fertil3')` in `wooldridge` package.
+
+(Note: This dataset comes from a publicly available dataset from Jeffery Wooldridge Textbook. See data description in https://rdrr.io/cran/wooldridge/man/fertil3.html)
+
+First, load in the time series data for this question. There are 72 observations on 24 variables about women fertility rate between year 1913 and 1984. Key variables are listed below:
+
+- `gfr`: births per 1000 women between age 15 and 44.
+- `pe`: real value personal tax exemption in US dollars.
+- `ww2`: a binary variable = 1 during World War 2 between 1941 and 1945.
+- `pill`: a binary variable = 1 from 1963 on when the birth control pill was made available for contraception.
+
+```{r q3-read-dataset, echo=TRUE}
+# read dataset into workplace, note that you need library(wooldridge) to load this data set
+data('fertil3')
+# if you want, is can be converted to ts object
+fertil = ts(fertil3, frequency = 1, start = 1913)
+```
+
+(3a) Start off by plotting `gfr` (fertility rate) and `pe` (personal tax exemption) against time in the same plot. What do you observe from the time series plots alone: do you see any trend or seasonality? Do you think that `gfr` time series is stationary? (2 points)
+
+Remark: You should be able to visualize data with R base graphics at least. Other alternative R graphic packages such as `ggplot` are welcomed additions.
+
+<p style="color:red">**Type your answer here.**</p>
+
+```{r q2a-plot, echo=TRUE}
+# type your code here
+
+```
+
+(3b) If we want to study the relationship between personal tax exemption `pe` (an economic factor) and fertility rate `gfr`, run a linear regression of `gfr` on `pe`. Interpret the coefficient before `pe`. Is it statistically significant? What's your conclusion about whether tax exemption improves fertility rate, from the regression output? (3 points)
+
+<p style="color:red">**Type your answer here.**</p>
+
+```{r q3b-regression, echo=TRUE}
+# type your code here
+
+```
+
+
+(3c) Now, include a time trend variable `t` into the regression model. Interpret the coefficient before `pe` and `t`. What's been changed in the regression result compared to previous one? Which model do you think we should choose, and why? (4 points)
+
+<p style="color:red">**Type your answer here.**</p>
+
+```{r q3c-regression, echo=TRUE}
+# type your code here
+
+```
+
+
+As we have discussed fertility rate in U.S. between 1913 and 1984 in previous question, now let's turn our attention to fertility rate in Singapore in modern times, where the fertility rate plummets to lowest figure in 2020 in history. 
+
+- Dataset required: `SGfertil20.csv`
+
+Note: This dataset comes from publicly available data from the Singapore Department of Statistics, or SingStat. https://www.singstat.gov.sg/find-data/search-by-theme/population/births-and-fertility/latest-data. You can download the data yourself and explore. For homework, I have done some data cleaning as to have only one time series variable ,`gfr`, in `sgfertil.csv` which contains information on fertility rate of childbearing age women between age 15 and 44 in Singapore comparable to that in U.S. 
+
+```{r q3-fertil-data-input, echo=TRUE}
+# read raw data from 'sgfertil.csv'
+sgfertil = read.csv(file = 'SGfertil20.csv', header= TRUE)
+sgfertil = sgfertil %>% 
+  # given our focus in univariate time-series analysis on total fertility rate..
+  select(Data.Series, Total.Fertility.Rate..Per.Female.) %>%
+  # rename
+  rename(year = Data.Series, gfr = Total.Fertility.Rate..Per.Female.) %>%
+  # sort the data bt ascending on year
+  arrange(year)
+# extract the key time series of our interest and convert it to ts obj
+gfrsg = ts(sgfertil$gfr, start = 1960, end = 2020, frequency = 1)
+```
+`sgfertil` contains yearly data about gross fertility rate per thousand women between 1960 and 2020. A quick description of the data:
+
+Obs:  61
+- `gfr`: total fertility rate of women in their childbearing age between 15 and 44, #births per thousand
+- `year`: as described.
+
+(3d) Let's start off by plotting the `gfrsg` against time. Draw the time series plot of `gfrsg`. Describe what you observe from the plot: do you see any trend or/and seasonality? Do you think total fertility rate time series in Singapore `gfrsg` stationary? (2 points)
+
+<p style="color:red">**Type here your answer here.**</p>
+```{r q3a-plot, echo=TRUE}
+# type your code here
+
+```
+
+
+(3e) In order to predict future fertility rate using information contained in the time series of `gfrsg` itself, let's make forecast by simply fitting a moving average series. First, compute the moving averages with window length of 6 years and plot both the original and moving average series in the same graph. Second, obtain the moving average prediction series. What is the MA predicted value for Year 2021 and Year 2024? (4 points)
+
+<p style="color:red">**Type here your answer here.**</p>
+```{r q3b-plot-adf, echo=TRUE}
+# type your code here
+
+```
+
+
+(3f) Based on your observation in (Q3d), predict the fertility rates for Year 2021 and Year 2024 with Holt-Winter model of your choice. (3 points)
+
+<p style="color:red">**Type here your answer here.**</p>
+
+```{r q3f, echo=TRUE}
+# type your code here
+
+```
+
+
+### Question 4 (7 points)
+
+- Dataset required: `data('recid')`
+
+We shall continue with the `recid` problem from the previous tutorial and examine the the likelihood of supervised release, where an offender is released from prison subject to monitoring and supervision of probation officer. A reminder of the dataset we had:
+
+```{r q3-recid-data-input, echo=TRUE}
+recid = read.csv(file = 'recid.csv', header= TRUE)
+```
+
+C.-F. Chung, P. Schmidt, and A.D. Witte (1991), “Survival Analysis: A Survey,” Journal of Quantitative Criminology 7, 59-98.
+Data Source: https://www.cengage.com/cgi-wadsworth/course_products_wp.pl?fid=M20b&product_isbn_issn=9781111531041. A quick description of the data:
+
+Obs:  1445
+
+  1. black                    =1 if black
+  2. alcohol                  =1 if alcohol problems
+  3. drugs                    =1 if drug history
+  4. super                    =1 if release supervised
+  5. married                  =1 if married when incarc.
+  6. felon                    =1 if felony sentence
+  7. workprg                  =1 if in N.C. pris. work prg.
+  8. property                 =1 if property crime
+  9. person                   =1 if crime against person
+ 10. priors                   # prior convictions
+ 11. educ                     years of schooling
+ 12. rules                    # rules violations in prison
+ 13. age                      in months
+ 14. tserved                  time served, rounded to months
+ 15. follow                   length follow period, months
+ 16. durat                    max(time until return, follow) in month
+ 17. cens                     =1 if duration right censored
+ 18. ldurat                   log(durat)
+
+
+(4a) Criminal offense lawyers usually fight for supervised release of the offender. Given five variables in `recid` data set: `super`, `rules`, `age`, `tserved`, `married`, and `black`, how could you help the law firm to predict the outcome of a recent case given that a 46-year-old married non-black client has been serving the jail time for 3 years and 7 months and during which broken no rule in the prison? 
+In order to evaluate the likelihood to answer such question. First of all, write down the regression model you propose to use. Clearly define or label your variables.  (2 point)
+
+<p style="color:red">**Type your answer here**</p>
+
+
+(4b) Run your regression model in R and interpret the coefficients before `rules` and `black`. Based on the results, do you think there was any racial discrimination in terms of likelihood of supervised release, and why? (3 point)
+
+<p style="color:red">**Type your answer here**</p>
+
+```{r q4b, echo=TRUE}
+# type your code here
+
+```
+
+(4c) Finally, what is the predicted probability for supervised release for the new client? (2 point)
+
+Note: Classify a successful supervised release case if probability of supervised release is greater or equal to 0.5; and no supervised release otherwise.
+
+
+<p style="color:red">**Type your answer here**</p>
+
+```{r q4c, echo=TRUE}
+# type your code here
+
+```
+
+
+
+
+
+
