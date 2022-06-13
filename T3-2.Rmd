@@ -1,0 +1,504 @@
+---
+title: "BT1101-Tutorial 3"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- We would recommend that you play with the PDF file using pdf_document for your own benefit. We only require `html` format for assignments and exam.
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with the answer of your own.  (This is usually the descriptive and explanation part of your answer)
+- Submit *only* the required question for grading (Part 2: Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]-[MatricNumber].rmd`, and the output will automatically be `T[X]-[MatricNumber].html`. 
+    - for example, `T3-12345.html`
+    - X is the Tutorial number at the top of this file. For example, this file is for "T3".
+- Submit both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for the exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** You are responsible for de-bugging and programming in the practical exam.
+
+## Preparation
+
+## Tutorial 3
+
+```{r load-libraries, echo=FALSE}
+#install.packages - only need to run this code once to install the package
+# load required packages
+# library("xxxx")
+library("tidyverse") #need to call the library before you use the packages
+library("rpivotTable")
+library("knitr")
+```
+
+### Tutorial 3 Part 2
+
+- Dataset required: `Ecommerceshipping.xlsx`
+
+The dataset is from an international ecommerce based company, selling electronic products, that would like to discover key insights from their customer database. There are 10999 observations and 12 variables. Each of the variable (column) is defined as follows: 
+
+- `ID`: ID Number of Customers.
+- `Warehouse_block`: The Company have big Warehouse which is divided in to block such as A,B,C,D,E.
+- `Mode_of_shipment`:The Company Ships the products in multiple way such as Ship, Flight and Road.
+- `Customer_care_calls`: The number of calls made for enquiry of the shipment.
+- `Customer_rating`: The company has rating from every customer. 1 is the lowest (Worst), 5 is the highest (Best).
+- `Cost_of_the_Product`: Cost of the Product in US Dollars.
+- `Prior_purchases`: The Number of Prior Purchase.
+- `Product_importance`: The company has categorized the product in the various parameter such as low, medium, high.
+- `Gender`: Male and Female.
+- `Discount_offered`: Discount offered on that specific product.
+- `Weight_in_gms`: It is the weight in grams.
+- `Reached.on.time_Y.N`: It is the target variable, where 1 Indicates that the product has NOT reached on time and 0 indicates it has reached on time.
+
+```{r q2-read-dataset, echo=TRUE}
+#set working directory
+setwd("~/Desktop/BT1101/Tutorials/Tutorial 3 - Data Exploration and Visualisation")
+
+#import excel file into RStudio
+library(readxl)
+Ecommerce_Shipping <- read_excel("~/Desktop/BT1101/Tutorials/Tutorial 3 - Data Exploration and Visualisation/Ecommerceshipping.xlsx")
+ES <- Ecommerce_Shipping
+head(ES)
+
+```
+
+
+### Q2.(a) Product Shipment Dashboard (11 marks)
+Develop a dashboard for the company to better understand the profile of products shipped to their customers. The requirements for the Product Shipment Dashboard are as follows: 
+
+- i. To be able to view the frequency distributions for each of the following variables in a chart and table: `Warehouse Block`, `Mode of Shipment`, `Cost of the product`, `Weight in gms`, `Product Importance`, `Discount offered `, `Reached on time`
+- ii. To be able to view the frequency distribution for `Reached on time` across different mode of shipments.
+- iii. To be able to view the frequency distribution for `Reached on time` across different warehouse blocks. 
+- iv. To be able to compare the frequency distribution for `Reached on time` across different mode of shipments and different warehouse blocks in one table. 
+- v. To examine the relationship between Cost of Product and Discount Offered. 
+
+- From the charts in (ii) to (iv), do you see any difference in proportion of shipments being on time across modes of shipments or warehouse blocks?  From chart v, what do you observe? 
+
+- For tutorial discussion and not for submission: Are there any other pairs of variables that might be interesting to compare frequencies for? 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q2.(a), echo=TRUE}
+##(i)
+#Table for frequency distribution of Warehouse Block
+Warehouse_blockFreq <- ES %>% count(Warehouse_block)
+kable(Warehouse_blockFreq, caption = "Frequency of Products Shipped by Warehouse Block")
+
+#Pie chart for Warehouse Block
+slice.Warehouse_block <- Warehouse_blockFreq$n
+Warehouse_block.piepercent <- 100*round(Warehouse_blockFreq$n/sum(Warehouse_blockFreq$n), 2)
+label <- Warehouse_blockFreq$Warehouse_block
+label <- paste(label,",",sep="")
+label <- paste(label,Warehouse_block.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.Warehouse_block,
+    labels=label,
+    col=rainbow(length(label)),
+    radius=1,
+    main="Warehouse Blocks of Products Shipped")
+
+#Alternatively, bar plot for Warehouse Block
+#Pay attention to the text line
+bpWH <- barplot(Warehouse_blockFreq$n, 
+                main="Warehouse Block Type Frequency",
+                col="blue",
+                xlab="Warehouse Block Type",
+                ylab="Frequency",
+                ylim=c(0,4000))
+#text to add labels to each bar
+text(bpWH, 
+     0,
+     col="white",
+     round(Warehouse_blockFreq$n, 1),
+     cex=1,
+     pos=3)
+
+
+#Table for frequency distribution of Mode of Shipment
+Mode_of_ShipmentFreq <- ES %>% count(Mode_of_Shipment)
+kable(Mode_of_ShipmentFreq, caption = "Frequency of Products Shipped by Mode of Shipment")
+
+#Pie chart for Mode of Shipment
+slice.shipment <- Mode_of_ShipmentFreq$n
+Mode_of_Shipment.piepercent <- 100*round(Mode_of_ShipmentFreq$n/sum(Mode_of_ShipmentFreq$n), 2)
+label <- Mode_of_ShipmentFreq$Mode_of_Shipment
+label <- paste(label,",",sep="")
+label <- paste(label,Mode_of_Shipment.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.shipment,
+    labels=label,
+    col=rainbow(length(label)),
+    radius=1,
+    main="Mode of Shipment of Products Shipped")
+
+#Histogram for Cost of the Product
+h.cost <- hist(ES$Cost_of_the_Product,
+               main="Histogram of Cost of Products Shipped",
+               xlab="Cost of Product",
+               ylab="Number of Products",
+               col=c("darkorange"),
+               ylim=c(0, 1800),
+               xlim=c(50, 350),
+               labels=TRUE)
+
+#extract frequency table from hist()
+Cost.Group <- cut(ES$Cost_of_the_Product, h.cost$breaks)
+t.cost <- table(Cost.Group)
+kable(t.cost, caption="Frequency distribution by Cost of Product")
+
+#Histogram for Weight in gms
+h.weight <- hist(ES$Weight_in_gms, 
+                 main="Histogram of Weight in gms of Products Shipped",
+                 xlab="Weight in gms",
+                 ylab="Number of Products",
+                 col=c("blue"),
+                 ylim=c(0, 2000),
+                 labels=TRUE)
+
+#extract frequency table from hist()
+Weight.Group <- cut(ES$Weight_in_gms, h.weight$breaks)
+t.weight <- table(Weight.Group)
+kable(t.weight, caption="Frequency distribution by Weight in gms")
+
+#Table for frequency distribution of Product Importance
+Product_importanceFreq <- ES %>% count(Product_importance)
+kable(Product_importanceFreq, caption="Frequency of Products Shipped by Product Importance")
+
+#Pie chart for Product Importance
+slice.pi <- Product_importanceFreq$n
+pi.piepercent <- 100*round(Product_importanceFreq$n/sum(Product_importanceFreq$n), 2)
+label <- Product_importanceFreq$Product_importance
+label <- paste(label,",",sep="")
+label <- paste(label,pi.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.pi,
+    labels=label,
+    col=c(rainbow(length(label))),
+    radius=1,
+    main="Product Importance of Products Shipped")
+
+#Histogram for Discount Offered
+h.discount <- hist(ES$Discount_offered,
+                   main="Histogram of Discount Offered of Products Shipped",
+                   xlab="Discount Offered",
+                   ylab="Number of Products",
+                   col=c("green"),
+                   ylim=c(0, 4500),
+                   xlim=c(0, 70),
+                   labels=TRUE)
+
+#extract frequency table from hist()
+discount.Group <- cut(ES$Discount_offered, h.discount$breaks)
+t.discount <- table(discount.Group)
+kable(t.discount, caption="Frequency distribution by Discount Offered")
+
+#Table of frequency distribution of Reached on time
+Reached.on.Time_Y.NFreq <- ES %>% count(Reached.on.Time_Y.N)
+kable(Reached.on.Time_Y.NFreq, caption="Frequency of Products Shipped by Whether Reached on Time")
+
+#Pie chart for Reached on Time
+slice.time <- Reached.on.Time_Y.NFreq$n
+time.piepercent <- 100*round(Reached.on.Time_Y.NFreq$n/sum(Reached.on.Time_Y.NFreq$n), 2)
+label <- c("Yes", "No")
+label <- paste(label,",",sep="")
+label <- paste(label,time.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.time,
+    labels=label,
+    col=c(rainbow(length(label))),
+    radius=1,
+    main="Whether Reached on Time of Products Shipped")
+
+##(ii)
+#Create contingency table for Reached on time and Mode of Shipment with Mode of Shipment as columns and Reached on time as rows
+ES1 <- ES %>% group_by(Reached.on.Time_Y.N, Mode_of_Shipment) %>% tally()
+ES1.spread <- ES1 %>% spread(key=Mode_of_Shipment, value=n)
+kable(ES1.spread, caption="Contingency taboe for Reached on Time and Mode of Shipment")
+
+#plot the beside grouped bar plot
+barmatrix.ES1 <- as.matrix(ES1.spread[,c(2:4)])
+bar_col1 <- c("blue", "gray")
+bpreach <- barplot(barmatrix.ES1,
+        col=bar_col1,
+        ylim=c(0,5000),
+        main="Reached on Time and Mode of Shipment",
+        beside=TRUE)
+legend("topleft",
+       cex=1,
+       fill=bar_col1,
+       c("Yes", "No"))
+#text label
+text(bpreach,
+     0,
+     col="white",
+     round(barmatrix.ES1, 1),
+     cex=1,
+     pos=3)
+
+#Create contingency table for Reached on time and Warehouse Block with Warehouse Block as columns and Reached on time as rows
+ES2 <- ES %>% group_by(Reached.on.Time_Y.N, Warehouse_block) %>% tally()
+ES2.spread <- ES2 %>% spread(key=Warehouse_block, value=n)
+kable(ES2.spread, caption="Contingency table for Reached on Time and Warehouse Block")
+
+#plot the beside grouped bar plot
+barmatrix.ES2 <- as.matrix(ES2.spread[,c(2:6)])
+bar_col2 <- c("red", "gray")
+barplot(barmatrix.ES2,
+        col=bar_col2,
+        main="Reached on Time and Warehouse Block",
+        ylim=c(0,2500),
+        beside=TRUE)
+legend("topleft",
+       cex=1,
+       fill=bar_col2,
+       c("Yes", "No"))
+
+##(iv)
+#use a pivot table to compare the frequency distribution for Reached on Time across different modes of shipments and different warehouse blocks in one table
+rpivotTable(ES,
+            rows ="Reached.on.Time_Y.N", 
+            cols=c("Mode_of_Shipment","Warehouse_block"),
+            aggregatorName = "Count")
+
+#correct answer
+rpivotTable(ES,
+            rows =c("Reached.on.Time_Y.N","Warehouse_block"), 
+            cols="Mode_of_Shipment",
+            height="auto")
+
+#create a table using count function
+tab.time<- ES %>% count(Reached.on.Time_Y.N,Mode_of_Shipment,Warehouse_block)
+kable(tab.time, caption="Table to Compare Reached on Time and Mode of Shipment and Warehouse Block")
+
+##(v)
+#plot the scatterplot to view relationship between Cost of Product and Discount Offered
+plot(ES$Cost_of_the_Product,
+     ES$Discount_offered,
+     main="Scatterplot of Discount Offered to Cost of Product",
+     ylab="Discount Offered",
+     xlab="Cost of Product")
+
+#Overplotting (points plotted on top of each other) is a coomon issue with scatterplots, especially when there are a large number of data points.  
+
+```
+
+<p style="color:blue">
+(ii)  From the chart in (ii), a larger proportion of the products are transported through ship, as compared to flight and road. However, within each mode of shipment, the proportion of shipments being on time is similar as there are less products reached on time than not on time for each mode of shipment, as shown by the higher grey bar (showing "No" for reached on time) as compared to the lower blue bar (showing "Yes" for reached on time) within each individual mode of shipment. Thus, there is not much difference in proportion of shipments being on time across modes of shipments. 
+
+(iii) From the chart in (iii), a larger proportion of products are in warehouse block F, as compared to the remaining four blocks. However, within each warehouse block, the proportion of shipments being on time is similar as there are less products reached on time than not on time in each warehouse block, as shown by the higher grey bar (showing "No" for reached on time) as compared to the lower red bar (showing "Yes" for reached on time) within each warehouse block. Thus, there is not much difference in proportion of shipments being on time across different warehouse blocks. 
+
+(iv) From the table in (iv), there is not much difference in proportion of shipments being on time across different modes of shipment and different warehouse blocks. Within each warehouse block and under the same mode of shipment, the proportion of products reached not on time is generally higher than that of products reached on time. Thus the proportion is similar across modes of shipments and warehouse blocks. 
+
+(v) As observed from the graph in (v), there is no clear pattern between the two variables, cost of the product and discount offered for the product, as a lot of the points plotted are cluttered at the bottom, and not showing a clear pattern.
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+### Q2.(b) Customer Analyses Dashboard (7 marks)
+This dashboard is to enable the company to understand their customers better. The following are the requirements for the Customer Analyses Dashboard: 
+
+- i. To be able to view the frequency distributions for each of the following variables in a chart and table: `Gender`, `Customer_care_calls`, `Customer_rating`
+- ii. To be able to view the frequency distribution for `Customer rating` across different Gender in one table and barplot. Do you observe any difference in customer rating across females and males? 
+- iii. To be able to view the frequency distribution for `Cost_of_the_Products` for each gender in two separate tables and charts. Do you observe any different across females and males? 
+
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q2.(b), echo=TRUE}
+##(i)
+#Table for frequency distribution of Gender
+GenderFreq <- ES %>% count(Gender)
+kable(GenderFreq, caption="Frequency Distribution by Genders")
+
+#Pie chart for Gender
+slice.Gender <- GenderFreq$n
+Gender.piepercent <- 100*round(GenderFreq$n/sum(GenderFreq$n), 2)
+label <- GenderFreq$Gender
+label <- paste(label,",",sep="")
+label <- paste(label,Gender.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.Gender,
+    labels=label,
+    col=rainbow(length(label)),
+    radius=1,
+    main="Customer Gender")
+
+#Table for frequency distribution of Customer Care Calls
+CallsFreq <- ES %>% count(Customer_care_calls)
+kable(CallsFreq, caption="Frequency Distribution of Number of Customer Care Calls")
+
+#Bar plot of Customer Calls
+barplot(CallsFreq$n,
+        names.arg=CallsFreq$Customer_care_calls,
+        col=c("purple"),
+        main="Frequency of Customers by Number of Customer Care Calls",
+        cex.names=1,
+        ylim=c(0, 4000),
+        xlab="Number of Customer Care Calls",
+        ylab="Number of Customers",
+        las=1)
+
+#Alternatively, a histogram can be used since the customer care calls are numeric
+#histogram for Customer Care Calls
+hcr <- hist(ES$Customer_care_calls,
+            breaks=c(2:8),
+            right=FALSE) #left close and right open, which means the first one corresponds to 2, etc.; default is right=TRUE, which is left open right close
+
+#extract frequency table from hist()
+cc.Group <- cut(ES$Customer_care_calls, hcr$breaks, right=FALSE)
+t.cc <- table(cc.Group)
+kable(t.cc, caption="Frequency distribution for Customer Care Calls")
+
+#Table for frequency distribution of Customer Rating
+RatingFreq <- ES %>% count(Customer_rating)
+kable(RatingFreq, caption="Frequency Distribution of Customer Rating")
+
+#Bar plot of Customer Rating
+barplot(RatingFreq$n,
+        names.arg=RatingFreq$Customer_rating,
+        col=c("pink"),
+        main="Frequency of Customers by Customer Rating",
+        cex.names=1,
+        ylim=c(0, 2500),
+        xlab="Customer Rating",
+        ylab="Number of Customers",
+        las=1)
+
+#Pie chart of Customer Rating
+slice.Rating <- RatingFreq$n
+Rating.piepercent <- 100*round(RatingFreq$n/sum(RatingFreq$n), 2)
+label <- RatingFreq$Customer_rating
+label <- paste(label,",",sep="")
+label <- paste(label,Rating.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.Rating,
+    labels=label,
+    col=rainbow(length(label)),
+    radius=1,
+    main="Customer Rating")
+
+##(ii)
+#Create contingency table for Customer rating and Gender with Customer rating as columns and Gender as rows
+ES4 <- ES %>% group_by(Gender, Customer_rating) %>% tally()
+ES4.spread <- ES4 %>% spread(key=Customer_rating, value=n)
+kable(ES4.spread, caption="Contingency table for Customer rating and Gender")
+
+#plot the beside grouped bar plot
+barmatrix.ES4 <- as.matrix(ES4.spread[,c(2:6)])
+bar_col4 <- c("yellow", "red")
+barplot(barmatrix.ES4,
+        col=bar_col4,
+        ylim=c(0,1500),
+        main="Customer Rating and Gender (spread by customer rating)",
+        beside=TRUE)
+legend("topleft", 
+       cex=0.8, 
+       fill=bar_col4, 
+       c("Female", "Male"))
+
+#Create contingency table for Customer rating and Gender with Gender as columns and Customer rating as rows
+ES3 <- ES %>% group_by(Customer_rating, Gender) %>% tally()
+ES3.spread <- ES3 %>% spread(key=Gender, value=n)
+kable(ES3.spread, caption="Contingency table for Customer Rating and Gender")
+
+#plot the beside grouped bar plot
+barmatrix.ES3 <- as.matrix(ES3.spread[,c(2:3)])
+bar_col3 <- rainbow(5)
+barplot(barmatrix.ES3,
+        names.arg=c("Female", "Male"),
+        col=bar_col3,
+        ylim=c(0,1200),
+        main="Customer Rating and Gender (spread by gender)",
+        beside=TRUE)
+legend("bottomleft", 
+       cex=0.8, 
+       fill=bar_col3, 
+       c("1","2","3","4","5"))
+
+
+
+##(iii)
+#Histogram for Cost of the Product for Female
+t.female <- ES %>% filter(Gender == "F")
+h.cost.female <- hist(t.female$Cost_of_the_Product,
+                      main="Histogram of Cost of the Product for Female Customers",
+                      xlab="Cost of the Product",
+                      ylab="Number of Female Customers",
+                      col="red",
+                      xlim=c(60, 340),
+                      ylim=c(0, 1000),
+                      labels=TRUE)
+
+#extract frequency table from hist()
+cost.female.Group <- cut(t.female$Cost_of_the_Product, h.cost.female$breaks)
+t.cost.female <- table(cost.female.Group)
+kable(t.cost.female, caption="Frequency distribution by Cost of the Product for Female Customers")
+
+#Histogram for Cost of the Product for Male
+t.male <- ES %>% filter(Gender == "M")
+h.cost.male <- hist(t.male$Cost_of_the_Product,
+                      main="Histogram of Cost of the Product for Male Customers",
+                      xlab="Cost of the Product",
+                      ylab="Number of Male Customers",
+                      col="blue",
+                      xlim=c(60, 340),
+                      ylim=c(0, 1000),
+                      labels=TRUE)
+
+#extract frequency table from hist()
+cost.male.Group <- cut(t.male$Cost_of_the_Product, h.cost.male$breaks)
+t.cost.male <- table(cost.male.Group)
+kable(t.cost.male, caption="Frequency distribution by Cost of the Product for Male Customers")
+
+```
+
+<p style="color:blue">
+(ii) While there are more female customers than male customers giving ratings of 1, 3, 4 and 5, there are more male customers than female customers giving rating of 2.
+
+(iii) Generally, there is no much difference across females and males. Between costs of 100 to 220, there are more female customers than male customers, Between costs of 220 to 300, there are more male customers than female customers. Both peaks occur at the (240, 260] interval, yet the peak in males is higher than that in females.
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+### Q2.(c) Pareto Analyses (2 marks)
+The company would like the findings of the Pareto analyses on Cost of Product to be displayed in this dashboard. To do this, you will need to show the number and percentage of customers that contribute most significantly to 80% of the total cost of products shipped. (For tutorial discussion only: Explain intuitively, what the results of the Pareto Analyses imply.)
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q2.(c), echo=TRUE}
+#extract only the Cost of Product and sort in descending order
+ES.cost <- ES %>% 
+  select(Cost_of_the_Product) %>% 
+  arrange(desc(Cost_of_the_Product))
+
+#compute the percentage of cost of product over total costs
+ES.cost$Percentage <- ES.cost$Cost_of_the_Product/sum(ES.cost$Cost_of_the_Product)
+
+#compute cumulative percentage for Cost of Product
+ES.cost$Cumulative <- cumsum(ES.cost$Percentage)
+
+#compute cumulative percentage of customers from top most Cost of Product
+ES.cost$Cumulative.cust <- as.numeric(rownames(ES))/nrow(ES)
+head(ES.cost)
+
+#percentage of customers contributing to most significantly to at least 80% Cost of Product
+which(ES.cost$Cumulative>0.8)[1]
+
+# compute percentage of customers with top 80% Cost of Product
+(which(ES.cost$Cumulative>0.8)[1])/nrow(ES)
+
+#Alternatively, use Cumulative.cust
+ES.cost$Cumulative.cust[which(ES.cost$Cumulative>0.8)[1]]
+
+
+
+```
+
+<p style="color:blue">
+A number of 7898 customers contribute most significantly to 80%  of the total cost of products shipped.
+
+A percentage of 71.8% of customers contribute most significantly to 80% of the total cost of products shipped.
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>

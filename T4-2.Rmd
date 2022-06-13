@@ -1,0 +1,491 @@
+---
+title: "BT1101-Tutorial 4 (Deadline: 4 Mar 9am)"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Introduction to R Markdown
+
+R Markdown, is an extremely useful tool that professional data scientists and business analysts use in their day-to-day work.
+
+You can open R Markdown documents in RStudio as well. You should see a little command called "Knit", which allows you to "knit" the entire R Markdown file into a HTML document, or a PDF document, or a MS Word Document (note, for MS Word, you'll need MS Word installed on your system; for PDF, you need to have Tex/Latex distribution installed).
+
+R Markdown is nice to use simply because it allows you to embed both code and write-up into the same document, and it produces presentable output, so you can use it to generate reports from your homework, and, when you eventually go out to work in a company, for your projects.
+
+Here's how you embed a "chunk" of R code.
+
+```{r example-chunk, echo=TRUE}
+1+1
+```
+
+After the three apostrophes, you'll need `r`, then you can give the chunk a name. Please note that **CHUNK NAMES HAVE TO BE A SINGLE-WORD, NO SPACE ALLOWED**. Also, names have to be unique, that is, every chunk needs a **different** name (this has led to rendering failures in previous final exams). You can give chunks names like:
+
+- `chunk1`
+- `read-in-data`
+- `run-regression`
+
+or, what will help you with homework:
+
+- `load-library`
+- `q1.(a)` etc
+
+These names are for you to help organize your code. (In practice it will be very useful when you have files with thousands of lines of code...). After the name of the chunk, you can give it certain options, separated by commas. I will highlight one important option. 
+
+- `echo=TRUE` means the code chunk will be copied into the output file. For homework purposes, **ALWAYS** set `echo=TRUE` so we know what code you wrote. When you go out to work in a company and you want to produce nice looking reports, feel free to set it to FALSE.
+
+There is a lot to syntax to learn using the R Markdown, but we don't need you to be an expert in R Markdown (although we do expect proficiency in R!). Hopefully, you can copy all the R Markdown syntax you need from the templates we provide. 
+
+Note about *working directories* in R Markdown. If you do not specify your working directory via `setwd('...')`, and you hit `Knit`, the document will assume that the working directory is the directory that the `.rmd` file is in. Thus, if your rmd is in `XYZ/folder1/code.rmd` and your dataset is `XYZ/folder1/data.csv`, then you can simply run `d0 <- read.csv('data.csv')` without running `setwd()`.
+
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- We would recommend that you play with the PDF file using pdf_document for your own benefit. We only require `html` format for assignments and exam.
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with the answer of your own.  (This is usually the descriptive and explanation part of your answer)
+- Submit *only* the required question for grading (Part 2: Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]-[MatricNumber].rmd`, and the output will automatically be `T[X]-[MatricNumber].html`. 
+    - for example, `T4-12345.html`
+    - X is the Tutorial number at the top of this file. For example, this file is for "T4".
+- Submit both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for the exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** You are responsible for de-bugging and programming in the exam.
+
+## Preparation
+
+## Tutorial 4
+
+```{r load-libraries, echo=TRUE}
+# install required packages if you have not (suggested packages: dplyr, tidyr, rpivotTable, knitr, psych)
+# install.packages("dplyr") #only need to run this code once to install the package
+# load required packages 
+# library("xxxx")
+library("dplyr") #need to call the library before you use the package
+library("tidyr")
+library("rpivotTable")
+library("knitr")
+library("psych")
+library("RColorBrewer")
+```
+
+### Tutorial 4 Part 2: CardioGood Fitness (To be Submitted; 25 marks)
+Context: Your market research team at AdRight is assigned the task to identify the profile of the typical customer for each treadmill product offered by CardioGood Fitness. Your team decides to investigate whether there are differences across the product lines with respect to customer characteristics. The team decides to collect data on individuals who purchased a treadmill at a CardioGoodFitness retail store during the prior three months. 
+
+The data are stored in the `CardioGoodFitness.csv` file. The team identifies the following customer variables to study: 
+
+- `Product`: product purchased (TM195, TM498, or TM798)
+- `Age`: in years
+- `Gender`: Female or Male
+- `Education`: number of years of education 
+- `MaritalStatus`: Single or Partnered
+- `Usage`: average number of times the customer plans to use the treadmill each week
+- `Fitness`: self-rated fitness on an 1-to-5 scale, where 1 is poor shape and 5 is excellent shape. 
+- `Income`: annual household income ($)
+- `Miles`: average number of miles the customer expects to walk/run each week
+
+You are tasked by your team to help in the tasks below toward creating a better understanding of the customer profile of the CardioGood Fitness treadmill product line.  
+
+```{r q2-read-dataset, echo=T}
+
+d1 <- read.csv("CardioGoodFitness.csv")
+
+```
+
+
+#### Q2.(a) Customer Profile by Product Dashboard (I).
+This dashboard should enable the team to better understand the demographics of the customers for different types of treadmill products. 
+
+- i) Create a table and pie chart to compare the frequency distributions for different product types. 
+- ii) Create a table and chart to compare the frequency distribution of different product types by `Gender` and another table and chart by `Marital Status`.
+- iii) Type your observations from the charts in the space below. 
+Do add the appropriate titles, labels, legend and use different shades of one color as the color palette for each chart. [You are not required to perform outlier analyses for this question part]
+
+[8 marks]
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r Q2a, echo=TRUE}
+##Type your codes here
+##(i)
+#Set the colour palette
+col1 = brewer.pal(n=3, name="Blues")
+
+#Frequency distribution for different product types
+TypeFreq <- d1 %>% count(Product)
+kable(TypeFreq, caption="Frequency of Different Product Types")
+
+#Pie chart for different product types
+slice.Type <- TypeFreq$n
+Type.piepercent <- 100*round(TypeFreq$n/sum(TypeFreq$n), 2)
+label <- TypeFreq$Product
+label <- paste(label, ",", sep="")
+label <- paste(label, Type.piepercent)
+label <- paste(label, "%", sep="")
+pie(slice.Type,
+    labels=label,
+    col=brewer.pal(n=3, "Greens"),
+    radius=1,
+    main="Frequency of Different Product Types")
+
+
+##(ii)
+#Create contingency table for product types and gender of customers with product types as columns and gender as rows
+d1_1 <- d1 %>% group_by(Gender, Product) %>% tally()
+d1_1.spread <- d1_1 %>% spread(key=Product, value=n)
+kable(d1_1.spread, caption="Contingency table for Product Types and Gender of Customers")
+
+#plot the beside grouped bar plot
+barmatrix.d1_1 <- as.matrix(d1_1.spread[,c(2:4)])
+bar_col1 <- c("blue","dodgerblue")
+bpgender <- barplot(barmatrix.d1_1,
+                    col=bar_col1,
+                    main="Product Types and Gender of Customers",
+                    beside=TRUE)
+legend("topright",
+       cex=0.8,
+       fill=bar_col1,
+       c("Female", "Male"))
+text(bpgender,
+     0,
+     col="white",
+     round(barmatrix.d1_1, 1),
+     cex=1,
+     pos=3)
+
+
+#Create contingency table for product types and marital status of customers with product types as columns and marital status as rows
+d1_2 <- d1 %>% group_by(MaritalStatus, Product) %>% tally()
+d1_2.spread <- d1_2 %>% spread(key=Product, value=n)
+kable(d1_2.spread, caption="Contingency table for Product Types and Marital Status of Cusomters")
+
+#plot the beside grouped bar plot
+barmatrix.d1_2 <- as.matrix(d1_2.spread[,c(2:4)])
+bar_col2 <- c("brown", "brown1")
+bpmarital <- barplot(barmatrix.d1_2,
+                     col=bar_col2,
+                     ylim=c(0,50),
+                     main="Product Types and Marital Status of Customers",
+                     beside=TRUE)
+legend("topright",
+       cex=1,
+       fill=bar_col2,
+       c("Partnered", "Single"))
+text(bpmarital,
+     0,
+     col="white",
+     round(barmatrix.d1_2, 1),
+     cex=1,
+     pos=3)
+
+
+```
+
+<p style="color:blue">
+(iii)
+
+Observation from the first chart on Frequency of Different Product Types:
+The product type `TM195` has the greatest number of users which is 80, taking up 44% of all customers. It is followed by the type `TM498` of 60 users, taking up 33% of all users. The type `TM798` has the least number of customers of 40, taking up 40% of all users.
+
+Observation from the second chart on Frequency of Different Product Types by `Gender`:
+While the numbers of male customers and female customers purchasing `TM195` are the same, there are slightly fewer female customers that purchased `TM498` as compared to male customers. There are significantly more male customers that purchase `TM798` as compared to female customers.
+
+Observation from the third chart on Frequency of Different Product Types by `Marital Status`:
+As for each type of product, the proportion of partnered customers as compared to that of single customers are similar. The general ratio of number of partnered customers to number of single customers is around 1.5 within each type of product, while the ratio of `TM798` is slightly lower than those of the other two types (more specifically speaking, 1.5 for `TM195`, 1.5 for `TM498`, and 1.35 for `TM798`).
+
+
+</p>
+
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+#### Q2.(b) Customer Profile by Product Dashboard (II).
+Next create a second dashboard with the following requirements: 
+
+- i. To be able to view the summary statistics (mean, sd, min, max) for the `Age`, `Education`, `Usage`, `Fitness`, `Income`, and `Miles` of the customers in one table. 
+- ii. To be able to compare the means for `Fitness` and `Usage` across the 3 product types in a table and chart. How would you describe the customer profile for the 3 types of products in terms of fitness and usage levels? (Note: Please create a separate table and chart for fitness and usage.)
+- iii. To be able to compare the means for `Usage` for the 3 product types by Gender in a table and chart. Again provide your interpretation from the chart. 
+
+Do add the appropriate titles and labels for each chart. [You are not required to perform outlier analyses for this question part]
+
+[10 marks]
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r Q2b, echo=TRUE}
+##Type your codes here
+##(i)
+#Manually generate each summary statistic (mean, sd, min, max) then combine into a table
+Age <- c(mean(d1$Age), sd(d1$Age), min(d1$Age), max(d1$Age))
+Education <- c(mean(d1$Education), sd(d1$Education), min(d1$Education), max(d1$Education))
+Usage <- c(mean(d1$Usage), sd(d1$Usage), min(d1$Usage), max(d1$Usage))
+Fitness <- c(mean(d1$Fitness), sd(d1$Fitness), min(d1$Fitness), max(d1$Fitness))
+Income <- c(mean(d1$Income), sd(d1$Income), min(d1$Income), max(d1$Income))
+Miles <- c(mean(d1$Miles), sd(d1$Miles), min(d1$Miles), max(d1$Miles))
+tab.2b <- rbind(Age, Education, Usage, Fitness, Income, Miles)
+kable(tab.2b, row.names=TRUE, col.names=c("Mean", "Std Dev", "Min", "Max"), caption="Descriptive Statistics for Age, Education, Usage, Fitness, Income, and Miles")
+
+#Use describe() function in psych package to generate the descriptive statistics
+d1age <- psych::describe(d1$Age)
+d1education <- psych::describe(d1$Education)
+d1usage <- psych::describe(d1$Usage)
+d1fitness <- psych::describe(d1$Fitness)
+d1income <- psych::describe(d1$Income)
+d1miles <- psych::describe(d1$Miles)
+d1.tab.2b <- rbind(d1age, d1education, d1usage, d1fitness, d1income, d1miles)
+d1.tab.2b$n <- d1.tab.2b$median <- d1.tab.2b$trimmed <- d1.tab.2b$mad <- d1.tab.2b$range <- d1.tab.2b$skew <- d1.tab.2b$kurtosis <- d1.tab.2b$se <- NULL
+d1.tab.2b$vars[1] <- "Age"
+d1.tab.2b$vars[2] <- "Education"
+d1.tab.2b$vars[3] <- "Usage"
+d1.tab.2b$vars[4] <- "Fitness"
+d1.tab.2b$vars[5] <- "Income"
+d1.tab.2b$vars[6] <- "Miles"
+kable(d1.tab.2b, row.names=FALSE, caption="Descriptive Statistics for Age, Education, Usage, Fitness, Income, and Miles")
+
+#dpyr option
+t2bi <- d1 %>% 
+  select("Age", "Education", "Usage", "Fitness", "Income", "Miles") %>% 
+  psych::describe() %>% 
+  select(mean, sd, min, max)
+kable(t2bi,
+      row.names=TRUE,
+      col.names=c("Mean", "Std Dev", "Min", "Max"),
+      caption="Descriptive Statistics for Customer Demographics")
+
+##(ii)
+#Create table to compare means for Fitness across the three Product Types
+mean.fitness <- d1 %>% group_by(Product) %>% summarise(mean=mean(Fitness))
+kable(mean.fitness)
+
+#Plot bar plot for means for Fitness across the three Product Types
+mean.fitness.spread <- mean.fitness %>% spread(key=Product, value=mean)
+mat.mean.fitness <- as.matrix(mean.fitness.spread[,c(1:3)])
+bpmeanfitness <- barplot(mat.mean.fitness,
+        col=c("pink"),
+        main="Mean Fitness across Product Types",
+        cex.names=1,
+        las=1,
+        ylim=c(0,5),
+        ylab="Mean Fitness")
+text(bpmeanfitness,
+     0,
+     col="black",
+     mat.mean.fitness,
+     cex=1,
+     pos=3)
+
+
+#Create table to compare means for Usage across the three Product Types
+mean.usage <- d1 %>% group_by(Product) %>% summarise(mean=mean(Usage))
+kable(mean.usage)
+
+#Plot bar plot for means for Usage across the three Product Types
+mean.usage.spread <- mean.usage %>% spread(key=Product, value=mean)
+mat.mean.usage <- as.matrix(mean.usage.spread[,c(1:3)])
+bpmeanusage <- barplot(mat.mean.usage,
+                       col=c("green"),
+                       main="Mean Usage across Product Types",
+                       cex.names=1,
+                       las=1,
+                       ylim=c(0,5),
+                       ylab="Mean Usage")
+text(bpmeanusage,
+     0,
+     col="black",
+     mat.mean.usage,
+     cex=1,
+     pos=3)
+
+
+
+
+##(iii)
+#Create table to compare means for Usage for the three Product Types by Genders
+mean.usage.gender <- d1 %>% group_by(Product, Gender) %>% summarise(mean=mean(Usage))
+kable(mean.usage.gender, caption="Table for Mean Usage across Product Types by Genders")
+mean.usage.gender.spread <- mean.usage.gender %>% spread(key=Product, value=mean)
+kable(mean.usage.gender.spread, caption="Table for Mean Usage across Product Types by Genders")
+
+#Plot bar plot for means for Usage across the three Product Types by Genders
+mat.mean.usage.gender <- as.matrix(mean.usage.gender.spread[,c(2:4)])
+bpmeanusagegender <- barplot(mat.mean.usage.gender,
+                             col=c("purple", "grey"),
+                             beside=TRUE,
+                             main="Mean Usage across Product Types by Genders",
+                             cex.names=1,
+                             las=1,
+                             ylim=c(0, 5.5),
+                             ylab="Mean Usage")
+legend("topleft",
+       cex=1,
+       fill=c("purple", "grey"),
+       mean.usage.gender.spread$Gender)
+text(bpmeanusagegender,
+     0,
+     col="white",
+     round(mat.mean.usage.gender, 3),
+     cex=1,
+     pos=3)
+
+
+```
+<p style="color:blue">
+(ii)
+
+Customers of `TM798` generally have a higher self-rated fitness than the customers of the other two types of products, meaning they view themselves as fitter than customers of the other two types of products, as shown by the higher mean fitness for `TM798` of 4.625 as compared to the means of fitness for `TM195` and `TM498` which are 2.9625 and 2.9 respectively.
+
+Customers of `TM798` generally have a higher usage level (greater number of times the customer plans to use the treadmill each week) than the other two types of products, as shown by the higher mean usage for `TM798` of 4.775 as compared to the means of usage for `TM195` and `TM498` which are 3.0875 and 3.066667 respectively.
+
+(iii)
+
+`Male` customers buying `TM195` generally have a higher usage level (greater number of times the customer plans to use the treadmill each week) than the `Female` customers buying the same product. This is shown by a higher mean usage of 3.275 for `Male` customers buying `TM195` than 2.9 for `Female` customers.
+
+`Female` customers buying `TM498` and `TM798` generally have a higher usage level (greater number of times the customer plans to use the treadmill each week) than the `Male` customers buying the same product. This is shown by a higher mean usage of 3.138 for `Female` customers buying `TM498` than 3 for `Male` customers, and a higher mean usage of 5 for `Female` customers buying `TM798` than 4.727 for `Male` customers.
+
+ 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+#### Q2.(c) Inspect Customer Income Data 
+
+- i) Conduct an outlier analyses on the `Income` variable. Describe your conclusion from this analyses. 
+- ii) Provide a chart and the appropriate statistic to analyse the linear association between `Income` and `Miles`. Type your interpretation of the results below. 
+
+
+[5 marks]
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r Q2c, echo=TRUE}
+##Type your codes here
+##(i)
+#Conduct Shapiro-Wilk Test
+shapiro.test(d1$Income)
+
+#Histogram
+h.income <- hist(d1$Income, 
+                 main="Histogram of Income",
+                 ylim=c(0,60),
+                 xlab="Income")
+text(x=h.income$mids, 
+     y=h.income$counts, 
+     labels=h.income$counts, 
+     cex=0.8, 
+     pos=3)
+
+#Density Plot
+plot(density(d1$Income),
+     main="Density Plot of Income",
+     xlab="Income")
+
+#Q-Q Plot
+qqnorm(d1$Income)
+qqline(d1$Income, 
+       col=2)
+
+#Box Plot
+boxplot(d1$Income, 
+        horizontal=TRUE)
+
+#Box Plot applying 3 * IQR
+boxplot(d1$Income, 
+        horizontal=TRUE, 
+        range=3)
+
+
+##(ii)
+#Scatter plot of Miles against Income
+plot(x=d1$Income,
+     y=d1$Miles,
+     main="Scatter Plot of Miles to Income",
+     xlab="Income",
+     ylab="Miles")
+
+#cor function from stats
+cor(d1$Income, d1$Miles)
+
+#cor.test from stats -- more detailed output
+cor.test(d1$Income, d1$Miles)
+
+```
+
+
+<p style="color:blue">
+(ii)
+
+Firstly, I conducted several tests to check whether the `Income` variable is normally distributed.
+
+Through the Shapiro-Wilk Normality Test, since the value of W of 0.87695 is rather close to 1, the `Income` variable is considered normally distributed. 
+
+However, the p-value of 5.577e-11 is significantly smaller than 0.05, which suggests that the `Income` variable is not normally distributed. However, since Shapiro Wilk's test is quite sensitive, it can sometimes falsely reject the null. Therefore, alternative methods like the W value and visual inspection are used.
+
+From the Histogram and Density Plot of Income, it is observed that the distribution of the `Income` variable generally resembles of the bell-shape curve of a normally distributed set of data, yet the right (or higher incomes) part of the graph does not follow the normal distribution. Hence, it is seen as normally distributed only to a limited extent.
+
+From the Q-Q Plot, it is observed that the distribution of the `Income` variable generally conforms to the normal distribution, yet the data points at two sides deviates from the red line. Hence, it is considered as normally distributed only to a limited extent.
+
+Therefore, the conclusion is that the `Income` variable is considered as normally distributed only to a limited extent.
+
+Next, I plotted box plots for `Income`, with 1.5 IQR and 3 IQR respectively. 
+
+In the box plots with both 1.5 and 3 IQR, there are a number of data points lying beyond the 1.5 IQR to the right, suggesting that these data points are the outliers.
+
+Therefore, given that the `Income` variable is normally distributed, and some data points are always way above the rest, these points are outliers.
+
+However, since the variable is considered as normally distributed only to a limited extent, it is likely that these data points are not outliers, but just points that do not follow normal distribution.
+
+
+(iii)
+
+As observed from the scatter plot of `Miles` to `Income`, `Miles` is generally higher with higher `Income`. This suggests that `Miles` and `Income` has a positive correlation. However, there is no obvious linear relationship between the two variables, so the correlation is rather weak.
+
+From the cor function and the cor.test, the cor value of 0.5434733 is a positive value just slightly larger than 0.5, implying a weak positive relationship between `Miles` and `Income`.
+
+`moderately positive`
+
+ 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+#### Q2.(d) Compute Probabilities 
+Provide the following probability computation on the dashboard: 
+
+- i) probability of a customer who has purchased a TM195, has an annual household income more than $62,000
+- ii) probability of a male customer purchasing a TM798 (and not the other treadmills)
+
+Use the dataset to compute these probabilities
+
+[2 marks]
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r Q2d, echo=TRUE}
+##Type your codes here
+##(i)
+d1.tm195 <- d1 %>% filter(Product=="TM195")
+d1.tm195.inc.high <- d1.tm195 %>% filter(Income>62000)
+nrow(d1.tm195.inc.high)/nrow(d1.tm195)
+
+
+##(ii)
+d1.male <- d1 %>% filter(Gender=="Male")
+d1.male.tm798 <- d1.male %>% filter(Product=="TM798")
+nrow(d1.male.tm798)/nrow(d1.male)
+
+
+```
+
+
+<p style="color:blue">
+
+ 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+
+
+
+

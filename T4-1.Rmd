@@ -1,0 +1,551 @@
+---
+title: "BT1101-Tutorial 4 (Deadline: 4 Mar 9am)"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Introduction to R Markdown
+
+R Markdown, is an extremely useful tool that professional data scientists and business analysts use in their day-to-day work.
+
+You can open R Markdown documents in RStudio as well. You should see a little command called "Knit", which allows you to "knit" the entire R Markdown file into a HTML document, or a PDF document, or a MS Word Document (note, for MS Word, you'll need MS Word installed on your system; for PDF, you need to have Tex/Latex distribution installed).
+
+R Markdown is nice to use simply because it allows you to embed both code and write-up into the same document, and it produces presentable output, so you can use it to generate reports from your homework, and, when you eventually go out to work in a company, for your projects.
+
+Here's how you embed a "chunk" of R code.
+
+```{r example-chunk, echo=TRUE}
+1+1
+```
+
+After the three apostrophes, you'll need `r`, then you can give the chunk a name. Please note that **CHUNK NAMES HAVE TO BE A SINGLE-WORD, NO SPACE ALLOWED**. Also, names have to be unique, that is, every chunk needs a **different** name (this has led to rendering failures in previous final exams). You can give chunks names like:
+
+- `chunk1`
+- `read-in-data`
+- `run-regression`
+
+or, what will help you with homework:
+
+- `load-library`
+- `q1.(a)` etc
+
+These names are for you to help organize your code. (In practice it will be very useful when you have files with thousands of lines of code...). After the name of the chunk, you can give it certain options, separated by commas. I will highlight one important option. 
+
+- `echo=TRUE` means the code chunk will be copied into the output file. For homework purposes, **ALWAYS** set `echo=TRUE` so we know what code you wrote. When you go out to work in a company and you want to produce nice looking reports, feel free to set it to FALSE.
+
+There is a lot to syntax to learn using the R Markdown, but we don't need you to be an expert in R Markdown (although we do expect proficiency in R!). Hopefully, you can copy all the R Markdown syntax you need from the templates we provide. 
+
+Note about *working directories* in R Markdown. If you do not specify your working directory via `setwd('...')`, and you hit `Knit`, the document will assume that the working directory is the directory that the `.rmd` file is in. Thus, if your rmd is in `XYZ/folder1/code.rmd` and your dataset is `XYZ/folder1/data.csv`, then you can simply run `d0 <- read.csv('data.csv')` without running `setwd()`.
+
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- We would recommend that you play with the PDF file using pdf_document for your own benefit. We only require `html` format for assignments and exam.
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with the answer of your own.  (This is usually the descriptive and explanation part of your answer)
+- Submit *only* the required question for grading (Part 2: Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]-[MatricNumber].rmd`, and the output will automatically be `T[X]-[MatricNumber].html`. 
+    - for example, `T4-12345.html`
+    - X is the Tutorial number at the top of this file. For example, this file is for "T4".
+- Submit both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for the exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** You are responsible for de-bugging and programming in the exam.
+
+## Preparation
+
+## Tutorial 4
+
+```{r load-libraries, echo=TRUE}
+# install required packages if you have not (suggested packages: dplyr, tidyr, rpivotTable, knitr, psych)
+# install.packages("dplyr") #only need to run this code once to install the package
+# load required packages 
+# library("xxxx")
+library("dplyr") #need to call the library before you use the package
+library("tidyr")
+library("rpivotTable")
+library("knitr")
+library("psych")
+library("RColorBrewer")
+```
+
+
+## Tutorial 4 Part 1 (For lab session)
+
+- Dataset required: `Sales Transactions.xlsx`
+
+`Sales Transactions.xlsx` contains the records of all sale transactions for a day, July 14. Each of the column is defined as follows:
+
+- `CustID` :  Unique identifier for a customer
+- `Region`: Region  of customer's home address 
+- `Payment`: Mode of payment used for the sales transaction
+- `Transction Code`: Numerical code for the sales transaction
+- `Source`: Source of the sales (whether it is through the Web or email)
+- `Amount`: Sales amount
+- `Product`: Product bought by customer
+- `Time Of Day`: Time in which the sale transaction took place. 
+
+
+```{r q1-read-dataset, echo=TRUE}
+#put in your working directory folder pathname ()
+setwd("~/Desktop/BT1101/Tutorials/Tutorial 4 - Descriptive Statistics, Probability Distributions")
+
+#import excel file into RStudio
+library(readxl)
+ST <- read_excel("~/Desktop/BT1101/Tutorials/Tutorial 4 - Descriptive Statistics, Probability Distributions/Sales Transactions.xlsx",
+                 col_types = c("numeric", "text", "text", "numeric", "text", "numeric", "text", "date"),
+                 skip=2)
+
+head(ST)
+
+```
+
+<p>
+**As the business analytics analyst of the company, you have been tasked to help the store manager develop dashboard that will enable him to gain better insights of the data. **
+</p>
+
+### Q1.(a) Customer Dashboard 
+The manager would like to have a better understanding of the customer profiles. He would like the customer dashboard to be able to display in charts and tables, the following:
+
+- i. frequency distribution for the regions the customers are from
+- ii. frequency distribution for the payment mode used by the customers
+
+He would like you to use shades of blue for the charts. He would also like to have your interpretation of the tables and charts generated. Write your observation in the space below. 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r 1a, echo=TRUE}
+##Enter your codes here
+##(i)
+#Frequency distribution for regions the customers are from
+RegionFreq <- ST %>% count(Region)
+kable(RegionFreq, caption="Frequency of Customers by Region")
+
+#Pie chart for Region
+slice.Region <- RegionFreq$n
+Region.piepercent <- 100*round(RegionFreq$n/sum(RegionFreq$n), 2)
+label <- RegionFreq$Region
+label <- paste(label,",",sep="")
+label <- paste(label,Region.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.Region,
+    labels=label,
+    col=c("blue","cyan","dodgerblue","skyblue"), #manually indicate blue colours
+    radius=1,
+    main="Frequency of Customers by Regions")
+
+#Alternative (in terms of blue colours)
+slice.Region <- RegionFreq$n
+Region.piepercent <- 100*round(RegionFreq$n/sum(RegionFreq$n), 2)
+label <- RegionFreq$Region
+label <- paste(label,",",sep="")
+label <- paste(label,Region.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.Region,
+    labels=label,
+    col=brewer.pal(n=4, "Blues"), #use packages installed to indicate blue colours
+    radius=1,
+    main="Frequency of Customers by Regions")
+
+#Bar plot for Region
+barplot(RegionFreq$n,
+        names.arg=RegionFreq$Region,
+        ylab="Number of customers",
+        ylim=c(0,200),
+        main="Frequency of Customers by Regions")
+
+##(ii)
+#Frequency distribution for payment modes used by the customers
+ModeFreq <- ST %>% count(Payment)
+kable(ModeFreq, caption="Frequency of Customers by Mode of Payment")
+
+#Pie chart for Mode of Payment
+slice.Mode <- ModeFreq$n
+Mode.piepercent <- 100*round(ModeFreq$n/sum(ModeFreq$n), 2)
+label <- ModeFreq$Payment
+label <- paste(label,",",sep="")
+label <- paste(label,Mode.piepercent)
+label <- paste(label,"%",sep="")
+pie(slice.Mode,
+    labels=label,
+    col=c("blue","cyan"),
+    radius=1,
+    main="Frequency of Customers by Mode of Payment")
+
+#Bar plot for Mode of Payment
+bp <- barplot(ModeFreq$n,
+              ylab="Frequency of Customers",
+              ylim=c(0,300),
+              names.arg=ModeFreq$Payment,
+              xlab="Payment Mode",
+              main="Frequency of Cutomers for each payment mode",
+              col="blue")
+
+#If label is required for the bars
+text(bp, 0, ModeFreq$n, pos=3)
+
+```
+
+<p style="color:blue">
+Type your observations here.
+
+</p>
+
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+### Q1.(b) Sales Transaction Analyses Dashboard 
+The manager would also like to have a dashboard to be able to visualize the sales `Amount` data better. 
+
+- i. First, generate the descriptive statistics for `Amount` in a table. The manager would like to include only these statistics: n (or number of observations), mean, sd, median, skew, kurtosis. (Discuss what these statistics tell you about the distribution of `Amount`. Is it normally distributed?)
+- ii. Plot the histogram for `Amount` and conduct the appropriate goodness of fit test to confirm if it is normally distributed. 
+- iii. The manager is concerned about potential outliers in the data. Can you help to identify if any outliers for `Amount` exists? 
+- iv. The manager suspects that the sales `Amount` may differ for transactions involving `Book` versus `DVD`. Could you generate the table and chart for him to be able to compare the mean and standard deviations of `Amount` for books versus dvds? Describe what you can observe from the chart. 
+- v. Perform the outlier analyses separately for books and dvds. What observations can you make now? Would you remove any of the outliers? 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r Q.1b, echo=TRUE}
+##Enter your codes here
+##(i)
+#Generate Descriptive stats for Amount
+tab.1b <- describe(ST$Amount)
+tab.1b
+
+#explicitly name package that function is from
+tab.1b <- psych::describe(ST$Amount)
+
+#remove columns not needed
+tab.1b$range <- tab.1b$trimmed <- tab.1b$mad <- tab.1b$min <- tab.1b$max <- tab.1b$se <- NULL
+tab.1b$vars[1] <- "Amount"
+kable(tab.1b, row.names=FALSE, caption="Descriptive Statistics for `Amount`")
+
+#many alternative methods
+tab.1b$range <- tab.1b[names(tab.1b) %in% c("range", "trimmed", "mad", "se", "min", "max") == FALSE]
+
+#or
+tab.1b[c("range", "trimmed", "mad", "se", "min", "max")] <- NULL
+tab.1b <- describe(ST$Amount) %>% as.data.frame()
+
+#or
+tab.1b %>% 
+  select(-c(range, trimmed, mad, se, min, max)) %>% 
+  mutate(vars="Amount") %>% 
+  mutate(across(where(is.double), round, 2)) %>% 
+  kable(row.names=FALSE, caption="Descriptive Statistics for `Amount`")
+
+#with dplyr
+ST %>% 
+  summarise(
+    vars="Amount",
+    n=n(),
+    mean=mean(Amount),
+    sd=sd(Amount),
+    median=median(Amount),
+    skew=skew(Amount),
+    kurtosis=kurtosi(Amount)) %>% 
+  mutate(across(where(is.double), round, 2)) %>%  #specify number of decimal places
+  kable(row.names=FALSE, caption="Descriptive Statistics for `Amount`")
+
+##(ii)
+#Histogram
+h.amount <- hist(ST$Amount, ylim=c(0,250))
+#mids indicates midpoint position (to be put in the middle of the histograms); counts indicates the height of the histogram
+#this text label is to label the number for each bar in the histogram
+text(x=h.amount$mids, y=h.amount$counts, labels=h.amount$counts, cex=0.8, pos=3)
+
+#Shapiro-Wilk Test
+shapiro.test(ST$Amount)
+#w - further form 1, the more it deviates from normality
+#p-value - imply that the distribution of data is how much different from normal distribution (if greater than 0.05, does not deviate from normality; if smaller than 0.05, deviates from normality)
+
+##(iii)
+#To detect outliers using a baxplot
+boxplot(ST$Amount, horizontal=TRUE)
+
+boxplot(ST$Amount, range=3)
+boxplot(ST$Amount, range=1.5)
+#The range argument determines how far the plot whiskers extend out of the box (how many IQR it is extended out of the box, namely 75th and 25th percentiles)
+
+##(iv)
+#Outlier analyses can be done in a few ways:
+#1. Visual inspection
+#2. Boxplots (assumes normally distributed data)
+#3. Rules of thumb (assumes normally distributed data)
+#When data is skewed, visual inspection should be used with charts such as histograms for outlier identification
+
+#Distribution Table
+tab.1b2 <- ST %>% 
+  group_by(Product) %>% 
+  summarise(mean=mean(Amount), SD=sd(Amount))
+kable(tab.1b2, caption="Mean and Std Deviation of `Amount` across Products")
+
+#Bar plot
+par(mar=c(5,10,4,2))
+#mar for margin - left, top, right, bottom respectively
+bar.1b2 <- as.matrix(tab.1b2[,c(2:3)])
+col.1b2 <- c("pink", "plum1")
+barplot(bar.1b2,
+        beside=TRUE,
+        col=col.1b2,
+        main="Mean and Std Deviation of `Amount` across Products",
+        cex.names=0.9,
+        las=1,
+        xlab="Amount")
+legend("topright", cex=0.7, fill=col.1b2, tab.1b2$Product)
+
+##(v)
+#using boxplot on sales amount for Book and DVD. 
+tab.books <- ST %>% filter(Product=="Book")
+tab.DVD <- ST %>% filter(Product=="DVD")
+boxplot.bk <- boxplot(tab.books$Amount, 
+                      horizontal=TRUE, 
+                      range=3)
+
+#out contains the values of data points which lie beyond the extremes of the whiskers
+boxplot.bk$out
+
+boxplot.dvd <- boxplot(tab.DVD$Amount,
+                       horizontal=TRUE,
+                       range=3)
+boxplot.dvd$out
+
+```
+
+
+<p style="color:blue">
+(ii)
+data:  ST$Amount
+W = 0.42617, p-value < 2.2e-16
+Since W is far from 1, it deviates from normality.
+Since p-value is much smaller than 0.05, the distribution of data deviates from normality.
+
+(iii)
+Since data is not normally distributed, we see many points to the right but no points are particular far from the rest, so we will not conclude that there is any outlier issues. 
+
+(iv)
+Books sold has a higher mean and higher standard deviation as compared to DVD sold.
+</p>
+
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+### Q1.(c) Checking Correlation
+The manager would like to check if the sales `Amount` for DVD has any correlation with `Time of the Day`.
+
+- i. Plot the appropriate chart and provide the statistical measure to help the manager assess this. 
+- ii. Type your interpretation for the manager in the space below. 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r Q.1c, echo=TRUE}
+##Enter your codes here
+##(i)
+#scatter plot of amount of time of day for DVD sales
+plot(x=tab.DVD$`Time Of Day`,
+     y=tab.DVD$Amount,
+     main="Scatter plot of Amount to Time of Day for DVD sales",
+     xlab="Time of Day",
+     ylab="Amount")
+
+#cor function from stats
+cor(as.numeric(tab.DVD$`Time Of Day`), tab.DVD$Amount)
+
+#cor.test from stats -- more detailed output
+cor.test(as.numeric(tab.DVD$`Time Of Day`), tab.DVD$Amount)
+
+```
+
+<p style="color:blue">
+Type your answer here.
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+### Q1.(d) Computing probabilities 
+The manager would like to use the existing data to compute the probability of the following events: 
+
+- i. `Amount` for sales transaction of `Book` is greater than $60.
+- ii. the sales transaction of `DVD` will come from the Web.
+
+Please compute the probabilities and type your answer below.
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r Q.1d, echo=TRUE}
+##Enter your codes here
+##(i)
+df.book <- ST %>% filter(Product=="Book")
+df.book60 <- df.book %>% filter(Amount>60)
+
+#alternatively, filter on multiple conditions
+df.book60 <- ST %>% filter(Product=="Book" & Amount>60)
+
+nrow(df.book60)/nrow(df.book)
+
+##(ii)
+df.dvd <- ST %>% filter(Product=="DVD")
+df.dvdweb <- df.dvd %>% filter(Source=="Web")
+nrow(df.dvdweb)/nrow(df.dvd)
+
+#alternatively, filter on multiple conditions
+df.dvdweb <- ST %>% filter(Product=="DVD" & Source=="Web")
+nrow(df.dvdweb)/nrow(df.dvd)
+
+#alternatively, create a table
+tab.1c <- ST %>% 
+  filter(Product=="DVD") %>% 
+  group_by(Source) %>% 
+  summarise(count=n(), 
+            percent=n()/nrow(.))
+kable(tab.1c, row.names=FALSE, caption="Sales transactions of DVD by source")
+
+```
+
+<p style="color:blue">
+(ii) no linear relationship observed
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+### Tutorial 4 Part 2: CardioGood Fitness (To be Submitted; 25 marks)
+Context: Your market research team at AdRight is assigned the task to identify the profile of the typical customer for each treadmill product offered by CardioGood Fitness. Your team decides to investigate whether there are differences across the product lines with respect to customer characteristics. The team decides to collect data on individuals who purchased a treadmill at a CardioGoodFitness retail store during the prior three months. 
+
+The data are stored in the `CardioGoodFitness.csv` file. The team identifies the following customer variables to study: 
+
+- `Product`: product purchased (TM195, TM498, or TM798)
+- `Age`: in years
+- `Gender`: Female or Male
+- `Education`: number of years of education 
+- `MaritalStatus`: Single or Partnered
+- `Usage`: average number of times the customer plans to use the treadmill each week
+- `Fitness`: self-rated fitness on an 1-to-5 scale, where 1 is poor shape and 5 is excellent shape. 
+- `Income`: annual household income ($)
+- `Miles`: average number of miles the customer expects to walk/run each week
+
+You are tasked by your team to help in the tasks below toward creating a better understanding of the customer profile of the CardioGood Fitness treadmill product line.  
+
+```{r q2-read-dataset, echo=T}
+
+d1 <- read.csv("CardioGoodFitness.csv")
+
+```
+
+
+#### Q2.(a) Customer Profile by Product Dashboard (I).
+This dashboard should enable the team to better understand the demographics of the customers for different types of treadmill products. 
+
+- i) Create a table and pie chart to compare the frequency distributions for different product types. 
+- ii) Create a table and chart to compare the frequency distribution of different product types by `Gender` and another table and chart by `Marital Status`.
+- iii) Type your observations from the charts in the space below. 
+Do add the appropriate titles, labels, legend and use different shades of one color as the color palette for each chart. [You are not required to perform outlier analyses for this question part]
+
+[8 marks]
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r Q2a, echo=TRUE}
+##Type your codes here
+
+
+
+```
+
+<p style="color:blue">
+Type your observations here.
+
+
+</p>
+
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+#### Q2.(b) Customer Profile by Product Dashboard (II).
+Next create a second dashboard with the following requirements: 
+
+- i. To be able to view the summary statistics (mean, sd, min, max) for the `Age`, `Education`, `Usage`, `Fitness`, `Income`, and `Miles` of the customers in one table. 
+- ii. To be able to compare the means for `Fitness` and `Usage` across the 3 product types in a table and chart. How would you describe the customer profile for the 3 types of products in terms of fitness and education levels?
+- iii. To be able to compare the means for `Usage` for the 3 product types by Gender in a table and chart. Again provide your interpretation from the chart. 
+
+Do add the appropriate titles and labels for each chart. [You are not required to perform outlier analyses for this question part]
+
+[10 marks]
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+```{r Q2b, echo=TRUE}
+##Type your codes here
+
+
+
+
+```
+<p style="color:blue">
+Type your observations here.
+
+ 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+#### Q2.(c) Inspect Customer Income Data 
+
+- i) Conduct an outlier analyses on the `Income` variable. Describe your conclusion from this analyses. 
+- ii) Provide a chart and the appropriate statistic to analyse the linear association between `Income` and `Miles`. Type your interpretation of the results below. 
+
+
+[5 marks]
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r Q2c, echo=TRUE}
+##Type your codes here
+
+
+```
+
+
+<p style="color:blue">
+Describe your conclusion here.  
+
+
+ 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+#### Q2.(d) Compute Probabilities 
+Provide the following probability computation on the dashboard: 
+
+- i) probability of a customer who has purchased a TM195, has an annual household income more than $62,000
+- ii) probability of a male customer purchasing a TM798 (and not the other treadmills)
+
+Use the dataset to compute these probabilities
+
+[2 marks]
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r Q2d, echo=TRUE}
+##Type your codes here
+
+
+
+
+
+```
+
+
+<p style="color:blue">
+
+ 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+
+
+
+

@@ -1,0 +1,382 @@
+---
+title: "BT1101-Tutorial 3"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Introduction to R Markdown
+
+R Markdown, is an extremely useful tool that professional data scientists and business analysts use in their day-to-day work.
+
+You can open R Markdown documents in RStudio as well. You should see a little command called "Knit", which allows you to "knit" the entire R Markdown file into a HTML document, or a PDF document, or a MS Word Document (note, for MS Word, you'll need MS Word installed on your system; for PDF, you need to have Tex/Latex distribution installed).
+
+R Markdown is nice to use simply because it allows you to embed both code and write-up into the same document, and it produces presentable output, so you can use it to generate reports from your homework, and, when you eventually go out to work in a company, for your projects.
+
+Here's how you embed a "chunk" of R code.
+
+```{r example-chunk, echo=TRUE}
+1+1
+```
+
+After the three apostrophes, you'll need `r`, then you can give the chunk a name. Please note that **CHUNK NAMES HAVE TO BE A SINGLE-WORD, NO SPACE ALLOWED**. Also, names have to be unique, that is, every chunk needs a **different** name (this has led to rendering failures in previous final exams). You can give chunks names like:
+
+- `chunk1`
+- `read-in-data`
+- `run-regression`
+
+or, what will help you with homework:
+
+- `load-library`
+- `q1.(a)` etc
+
+These names are for you to help organize your code. (In practice it will be very useful when you have files with thousands of lines of code...). After the name of the chunk, you can give it certain options, separated by commas. I will highlight one important option. 
+
+- `echo=TRUE` means the code chunk will be copied into the output file. For homework purposes, **ALWAYS** set `echo=TRUE` so we know what code you wrote. When you go out to work in a company and you want to produce nice looking reports, feel free to set it to FALSE.
+
+
+There is a lot to syntax to learn using the R Markdown, but we don't need you to be an expert in R Markdown (although we do expect proficiency in R!). Hopefully, you can copy all the R Markdown syntax you need from the templates we provide. 
+
+
+Note about *working directories* in R Markdown. If you do not specify your working directory via `setwd('...')`, and you hit `Knit`, the document will assume that the working directory is the directory that the `.rmd` file is in. Thus, if your rmd is in `XYZ/folder1/code.rmd` and your dataset is `XYZ/folder1/data.csv`, then you can simply run `d0 <- read.csv('data.csv')` without running `setwd()`.
+
+## Submission Instructions
+
+- Select `output: html_document`.
+- We would recommend that you play with the PDF file using pdf_document for your own benefit. We only require `html` format for assignments and exam.
+- Include all code chunks, so include `echo=TRUE` in all chunks.
+- Replace the placeholder text, "Type your answer here.", with the answer of your own.  (This is usually the descriptive and explanation part of your answer)
+- Submit *only* the required question for grading (Part 2: Submission). You can delete everything else for that submission. Remember to include any `library('package_name')` statements that you'll need to run your code and future reproduction. 
+- Rename your R Markdown file `T[X]-[MatricNumber].rmd`, and the output will automatically be `T[X]-[MatricNumber].html`. 
+    - for example, `T3-12345.html`
+    - X is the Tutorial number at the top of this file. For example, this file is for "T3".
+- Submit both R Markdown file (.rmd) and HTML (.html) to Luminus for tutorial assignments (upload to Luminus under the correct Submission Folder). We shall do the same for the exam.
+- **It is important to be able to code and produce your Rmarkdown output file *independently*.** You are responsible for de-bugging and programming in the practical exam.
+
+## Preparation
+
+## Tutorial 3
+
+
+```{r load-libraries, echo=FALSE}
+#install.packages - only need to run this code once to install the package
+# load required packages
+# library("xxxx")
+library("tidyverse") #need to call the library before you use the packages
+library("rpivotTable")
+library("knitr")
+```
+
+### Tutorial 3 Part 1
+
+- Dataset required: `Bank Credit Risk Data.xlsx`
+
+The worksheet Base Data in the Excel file Bank Credit Risk Data provides information about 425 bank customers who had applied for loans. Each of the column is defined as follows: 
+
+- `Loan Purpose` : Type of purpose for the loan applied
+- `Checking` : Checking account balance
+- `Savings` :  Savings account balance
+- `Months Customer`: Number of months has been a customer of the bank
+- `Months Employed`: Number of months in employment
+- `Gender`: Gender
+- `Marital Status`: Marital status 
+- `Age`: Age in years
+- `Housing`: Housing type
+- `Years`: Number of years at current residence
+- `Job`: Job type
+- `Credit Risk`: Credit-risk classification by the bank
+
+```{r q1-read-dataset, echo=TRUE}
+#put in your working directory folder pathname 
+setwd("~/Desktop/BT1101/Tutorials/Tutorial 3 - Data Exploration and Visualisation")
+
+#import excel file into RStudio
+library(readxl)
+Bank_Credit_Risk_Data <- read_excel("~/Desktop/BT1101/Tutorials/Tutorial 3 - Data Exploration and Visualisation/Bank Credit Risk Data.xlsx", sheet = "Base Data", skip = 2)
+# sheet = "Base Data" is necessary since there are two sheets and only the sheet "Base Data" is needed
+BD <- Bank_Credit_Risk_Data
+head(BD)
+
+```
+<p>
+**You will continue to build on the dashboards that we have started in lecture 3.**
+</p>
+
+### Q1.(a) Customer Profile Dashboard 
+The credit risk analyst would like to have a better understanding of the bank's loan customer through this Customer Profile Dashboard. In particular, he has the following requirements for the Customer Profile Dashboard: 
+
+- i. To be able to view the frequency distributions for each of the following customer demographic variables in a chart and table: `Housing`, `Job`, `Credit Risk`, `Months Employed` and `Total`. `Total` is the sum of `Checking` and `Savings`. (hint: You will need to create the variable `Total` in the dataframe)  
+- ii. To view the relationship between `Total` and `Months Employed` as well as `Total` and `Age` in two separate charts.
+- iii. To provide a description of any interesting patterns observed from the charts. (You may type your answer in the space below)
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q1.(a), echo=TRUE}
+#BD$Total <- BD$Checking + BD$Savings #base R
+BD <- BD %>% mutate(Total = Checking + Savings) #dplyr
+
+HouseFreq <- BD %>% count(Housing)
+kable(HouseFreq, caption = "Frequency of Bank Customers by Housing")
+
+#Pie chart for housing
+slice.house <- HouseFreq$n
+house.piepercent<- 100 * round(HouseFreq$n / sum(HouseFreq$n), 2)
+label <- HouseFreq$Housing
+label <- paste(label, ",", sep = "")
+label <- paste(label, house.piepercent)
+label <- paste(label, "%", sep = "")
+pie(slice.house, labels = label, radius = 1, main = "Customer Housing Type", col = c("blue", "red", "green"))
+
+JobFreq <- BD %>% count(Job)
+kable(JobFreq, caption = "Frequency of Bank Customers by Job")
+
+#Pie chart for job
+slice.job <- JobFreq$n
+job.piepercent <- 100*round(JobFreq$n/sum(JobFreq$n), 2)
+label <- JobFreq$Job
+label <- paste(label, ",", sep = "")
+label <- paste(label, job.piepercent)
+label <- paste(label, "%", sep = "")
+pie(slice.job, labels = label, radius = 1, main = "Customer Job", col = c("blue", "red", "yellow", "green"))
+
+#Bar plot for job
+barplot(JobFreq$n, xlab = "Number of customers", xlim = c(0, 300), horiz = TRUE, names.arg = JobFreq$Job, col = "blue", main = "Frequency of Bank Customers by Job", cex.names = 0.55, las = 1)
+
+CrFreq <- BD %>% count(`Credit Risk`)
+kable(CrFreq, caption = "Frequency of Bank Customers by Credit Risk")
+
+#Pie chart for credit risk
+slice.cr <- CrFreq$n
+cr.piepercent <- 100*round(CrFreq$n/sum(CrFreq$n), 2)
+label <- CrFreq$`Credit Risk`
+label <- paste(label, ",", sep = "")
+label <- paste(label, cr.piepercent)
+label <- paste(label, "%", sep = "")
+pie(slice.cr, labels = label, radius = 1, main = "Customer Credit Risk", col = c("red", "green"))
+
+#Histogram for Months Employed
+h.em <- hist(BD$`Months Employed`, main = "Hisogram of Customer Months Employed", xlab = "Customer Months Employed", ylab = "Number of Customers", col = c("darkorange"), ylim = c(0, 150), labels = TRUE)
+
+#extract frequency table from hist()
+Emp.Group <- cut(BD$`Months Employed`, h.em$breaks)
+t.emp <- table(Emp.Group)
+kable(t.emp, caption = "Frequency distribution by Months Employed")
+
+#Histogram for Total Account balance
+h.tot <- hist(BD$Total, main = "Histogram of Customer Total Account balance", xlab = "Total Account Balance", ylab = "Number of Customers", col = c("darkorange"), ylim = c(0, 400), labels = TRUE)
+
+#extract frequency table from hist()
+ab.Group <- cut(BD$Total, h.tot$breaks)
+t.emp <- table(ab.Group)
+kable(t.emp, caption = "Frequency distribution by Total Account balance")
+
+#Scatter plot for Total and Months Employed
+plot(BD$Total, BD$`Months Employed`, main = "Scatterplot of Months Employed to Total", ylab = "Months Employed", xlab = "Total")
+
+#Scatter plot for Total and Age
+plot(BD$Total, BD$Age, main = "Scatterplot of Age to Total", ylab = "Age", xlab = "Total")
+```
+
+<p style="color:blue">
+Type your answer for 1a here. 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+### Q1.(b) Customer Credit Risk Analyses Dashboard
+The credit risk analyst is also interested in understanding the demographics of customers with different levels of Credit Risk. in this dashboard, he would like to be able to :
+
+- i. see the appropriate charts and tables to compare `Credit Risk` with `Job` as well as `Credit Risk` with `Housing`. He requested the use of stacked barplots for these charts.
+- ii. see a description of any interesting patterns observed from the charts.
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q1.(b), echo=TRUE}
+#Create contingency table for Credit Risk and Job with Job as columns and Credit Risk as rows
+BDb1 <- BD %>% group_by(`Credit Risk`, Job) %>% tally()
+BDb1.spread <- BDb1 %>% spread(key=Job, value=n)
+kable(BDb1.spread, caption = "Contingency table for Credit Risk and Job")
+
+#Grouped stack barplot
+barmatrix.BDb1 <- as.matrix(BDb1.spread[, c(2:5)])
+bar_Col1 <- c("red", "green")
+barplot(barmatrix.BDb1, col = bar_Col1, main = "Credit Risk and Job")
+legend("topright", cex=0.6, fill = bar_Col1, BDb1.spread$`Credit Risk`)
+
+#Grouped beside barplot
+barplot(barmatrix.BDb1, col = bar_Col1, main = "Credit Risk and Job", beside = TRUE)
+legend("topright", cex=0.6, fill = bar_Col1, BDb1.spread$`Credit Risk`)
+
+#Create contingency table for Credit Risk and Housing with Housing as columns and Credit Risk as rows
+BDb2 <- BD %>% group_by(`Credit Risk`, Housing) %>% tally()
+BDb2.spread <- BDb2 %>% spread(key = `Housing`, value = n)
+kable(BDb2.spread, caption = "Contingency table for Credit Risk and Job")
+
+#Grouped stack barplot
+barmatrix.BDb2 <- as.matrix(BDb2.spread[, c(2:4)])
+barplot(barmatrix.BDb2, col=bar_Col1, main="Credit Risk and Housing")
+legend("topright", cex=0.6, fill=bar_Col1, BDb2.spread$`Credit Risk`)
+
+#Grouped beside barplot
+barplot(barmatrix.BDb2, col=bar_Col1, main="Credit Risk and Housing", beside = TRUE)
+legend("topright", cex=0.6, fill=bar_Col1, BDb2.spread$`Credit Risk`)
+```
+
+<p style="color:blue">
+Type your answer for 1b here. 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+### Q1.(c) Customer Loan Analyses Dashboard
+The credit risk analyst would like this dashboard to help him better understand the `Loan Purpose` of customers with "High" levels of `Credit Risk`. 
+
+- i. Could you generate the table and chart for them to visualize the distribution of `Loan Purpose` for "High" `Credit Risk` customers?
+- ii. Describe in your answer below: Which `Loan Purpose` types are most and least common among "High" `Credit Risk` customers? 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q1.(c), echo=TRUE}
+#extract records for High Credit Risk
+LoanHRFreq <- BD %>% filter(`Credit Risk` == "High") %>% count(`Loan Purpose`)
+kable(LoanHRFreq, caption = "Frequency Distribution for Loan Purpose for High Credit Risk Customers")
+
+LoanHRbar <- LoanHRFreq$n
+
+#Horizontal
+barplot(LoanHRbar, names.arg=LoanHRFreq$`Loan Purpose`, col = "blue", beside=TRUE, main = "Frequency of Loan Purpose for High Credit Risk Customers", cex.names=0.8, xlim=c(0, 80), xlab="Number of loans", horiz=TRUE, las=1)
+
+```
+
+<p style="color:blue">
+New car is the most common Loan Purpose type for High Credit Risk customers.
+Retraining is the least common Loan Purpose type for High Credit Risk customers.
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+### Q1.(d) Customer Account Balance Pareto Analyses
+The credit risk analyst would like the findings of the pareto analyses on `Total` to be displayed in this dashboard. In particular, he wants the dashboard to show the number and percentage of customers that contribute most, amounting to 80% of the total account balanced with the bank. 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q1.(d), echo=TRUE}
+#extract only the Total column and sort in descending order
+BD.tot <- BD %>% select(Total) %>% arrange(desc(Total))
+
+#compute the percentage of savings over total savings
+BD.tot$Percentage <- BD.tot$Total/sum(BD.tot$Total)
+
+#compute cumulative percentage for Total
+BD.tot$Cumulative <- cumsum(BD.tot$Percentage)
+
+#compute cumulative percentage of customers from top most savings
+BD.tot$Cumulative.cust <- as.numeric(rownames(BD))/nrow(BD)
+
+#percentage of customers contributing most significantly to at least 80% savings
+which(BD.tot$Cumulative>0.8)[1]
+
+(which(BD.tot$Cumulative>0.8)[1])/nrow(BD)
+
+
+```
+
+<p style="color:blue">
+Type your answer for 1d here. 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+### Tutorial 3 Part 2
+
+- Dataset required: `Ecommerceshipping.xlsx`
+
+The dataset is from an international ecommerce based company, selling electronic products, that would like to discover key insights from their customer database. There are 10999 observations and 12 variables. Each of the variable (column) is defined as follows: 
+
+- `ID`: ID Number of Customers.
+- `Warehouse_block`: The Company have big Warehouse which is divided in to block such as A,B,C,D,E.
+- `Mode_of_shipment`:The Company Ships the products in multiple way such as Ship, Flight and Road.
+- `Customer_care_calls`: The number of calls made for enquiry of the shipment.
+- `Customer_rating`: The company has rating from every customer. 1 is the lowest (Worst), 5 is the highest (Best).
+- `Cost_of_the_Product`: Cost of the Product in US Dollars.
+- `Prior_purchases`: The Number of Prior Purchase.
+- `Product_importance`: The company has categorized the product in the various parameter such as low, medium, high.
+- `Gender`: Male and Female.
+- `Discount_offered`: Discount offered on that specific product.
+- `Weight_in_gms`: It is the weight in grams.
+- `Reached.on.time_Y.N`: It is the target variable, where 1 Indicates that the product has NOT reached on time and 0 indicates it has reached on time.
+
+```{r q2-read-dataset, echo=TRUE}
+#import dataset into RStudio
+
+
+```
+
+
+### Q2.(a) Product Shipment Dashboard (11 marks)
+Develop a dashboard for the company to better understand the profile of products shipped to their customers. The requirements for the Product Shipment Dashboard are as follows: 
+
+- i. To be able to view the frequency distributions for each of the following variables in a chart and table: `Warehouse Block`, `Mode of Shipment`, `Cost of the product`, `Weight in gms`, `Product Importance`, `Discount offered `, `Reached on time`
+- ii. To be able to view the frequency distribution for `Reached on time` across different mode of shipments.
+- iii. To be able to view the frequency distribution for `Reached on time` across different warehouse blocks. 
+- iv. To be able to compare the frequency distribution for `Reached on time` across different mode of shipments and different warehouse blocks in one table. 
+- v. To examine the relationship between Cost of Product and Discount Offered. 
+
+- From the charts in (ii) to (iv), do you see any difference in proportion of shipments being on time across modes of shipments or warehouse blocks?  From chart v, what do you observe? 
+
+- For tutorial discussion and not for submission: Are there any other pairs of variables that might be interesting to compare frequencies for? 
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q2.(a), echo=TRUE}
+
+
+
+```
+
+<p style="color:blue">
+Type your answer for 2a here. 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+
+### Q2.(b) Customer Analyses Dashboard (7 marks)
+This dashboard is to enable the company to understand their customers better. The following are the requirements for the Customer Analyses Dashboard: 
+
+- i. To be able to view the frequency distributions for each of the following variables in a chart and table: `Gender`, `Customer_care_calls`, `Customer_rating`
+- ii. To be able to view the frequency distribution for `Customer rating` across different Gender in one table and barplot. Do you observe any difference in customer rating across females and males? 
+- iii. To be able to view the frequency distribution for `Cost_of_the_Products` for each gender in two separate tables and charts. Do you observe any different across females and males? 
+
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q2.(b), echo=TRUE}
+
+
+
+```
+
+<p style="color:blue">
+Type your answer for 2b here. 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
+
+### Q2.(c) Pareto Analyses (2 marks)
+The company would like the findings of the Pareto analyses on Cost of Product to be displayed in this dashboard. To do this, you will need to show the number and percentage of customers that contribute most significantly to 80% of the total cost of products shipped. (For tutorial discussion only: Explain intuitively, what the results of the Pareto Analyses imply.)
+
+<p style="color:red">**BEGIN: YOUR ANSWER**</p>
+
+```{r q2.(c), echo=TRUE}
+
+
+
+```
+
+<p style="color:blue">
+Type your answer for 2c here. 
+</p>
+
+<p style="color:red">**END: YOUR ANSWER**</p>
